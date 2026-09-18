@@ -10,7 +10,18 @@ DESIGN.md only when it has been chosen, and into Rapport only if a second mod wo
   Chemistry decides when autonomy scenes produce it. AAF's installed overlay sets on the
   reference setup: Belly, Anal, Breasts, DP, Back, M_Back, M_Chest (+ _Mutant). There is no
   face set in those packs; one would have to come from an overlay mod that provides it.
-  Check what CumOverlays v1.4 already does before building anything.
+  Checked. CumOverlays v1.4 is two things bundled: assets (57 LooksMenu templates, the textures
+  BA2, the esp LooksMenu keys against, and the AAF overlay sets) and logic (two scripts and an MCM
+  page). The assets cannot be replaced without commissioning art; the logic can. So it becomes a
+  resource dependency like an animation pack, and Rapport drives the sets.
+
+  AAF already supports a duration on an overlay group in XML, so "visible for N time" needs no
+  code. What it cannot do is survive a save, a reload, or the game closing mid-timer -- an overlay
+  stranded that way stays on the actor forever. Persistence in game time is Rapport's part, and the
+  reason this belongs in the framework rather than here.
+
+  No face or mouth template exists in those 57, so cum on the face is not possible with the assets
+  on hand.
 
 ## Open questions
 
