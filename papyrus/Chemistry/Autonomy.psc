@@ -72,6 +72,11 @@ Float Property fRefusalBackoffCap = 48.0 AutoReadOnly
 ; choice was made, and those are exactly the ones worth twelve lines. Two is for when
 ; the question is "why is it never choosing anybody", which needs the passes where it
 ; chose nobody.
+; The most pairs Rapport will publish, and so the size of the snapshot below.
+; Rapport keeps 24 for an addon; anything beyond this is ignored rather than read
+; from a list that has moved on.
+Int Property iMaxPairs = 24 AutoReadOnly
+
 Int Property iLogLevel = 1 AutoReadOnly
 Int Property iTallyEvery = 10 AutoReadOnly
 
@@ -82,6 +87,19 @@ Int _acted = 0
 Int _blockedResting = 0   ; passes where everything eligible was resting
 Int _blockedBar = 0       ; passes where the best was under the bar
 Int _blockedEmpty = 0     ; passes where Rapport published nothing
+
+; ONE read of Rapport's list per pass, held here while this pass decides and then
+; explains itself.
+;
+; Rapport republishes on its own twenty-second tick, and printing the table takes
+; about three seconds -- so reading the list twice reads two different lists. Seen
+; in the log: one table listed "Genevieve + Malcom Latimer" at both 0.92 and 0.32,
+; and "Johnny Friendly + Polly" at both 1.02 and 0.82, because a publish landed
+; while it was printing. A report that contradicts itself is worse than none.
+Int[] _first
+Int[] _second
+Float[] _score
+Int _held = 0
 
 ; ---- lifecycle ----------------------------------------------------------------
 
@@ -142,7 +160,8 @@ Function Consider()
 		_polls = 0
 	EndIf
 
-	Int count = Rapport:Core.CandidateCount()
+	Self.Snapshot()
+	Int count = _held
 	If count <= 0
 		_blockedEmpty += 1
 		If tally
@@ -155,7 +174,19 @@ Function Consider()
 	; second only runs when somebody is going to read it. Deciding and reporting are
 	; kept apart on purpose: a logger that changes what is chosen is worse than no
 	; logger, and interleaving them is how that happens.
+	; The winning pair's IDS, captured when it wins. Not its index.
+	;
+	; Rapport republishes on its own tick, every twenty seconds, and the table below
+	; takes about three seconds to print. Re-reading CandidateFirst(best) after the
+	; loop therefore indexes into a list that may have been replaced since the choice
+	; was made -- and then Chemistry asks for a pair it never evaluated.
+	;
+	; Seen in the log rather than reasoned about: pass 4 chose "Johnny Friendly +
+	; Polly at 1.26" while the table printed that same pair at 1.02 and BACKED OFF.
+	; Two different snapshots, one decision.
 	Int best = -1
+	Int bestFirst = 0
+	Int bestSecond = 0
 	Float bestScore = 0.0
 	Int resting = 0
 	Int backedOff = 0
@@ -164,8 +195,8 @@ Function Consider()
 
 	Int i = 0
 	While i < count
-		Int firstID = Rapport:Core.CandidateFirst(i)
-		Int secondID = Rapport:Core.CandidateSecond(i)
+		Int firstID = _first[i]
+		Int secondID = _second[i]
 
 		; A published id can have unloaded since the pass that measured it. Rapport
 		; hands out ids rather than Actors for exactly this reason.
@@ -173,7 +204,7 @@ Function Consider()
 			If !Self.Available(firstID) || !Self.Available(secondID)
 				backedOff += 1
 			ElseIf Self.Rested(firstID) && Self.Rested(secondID)
-				Float score = Rapport:Core.CandidateScore(i) + Self.RepeatBonus(firstID, secondID)
+				Float score = _score[i] + Self.RepeatBonus(firstID, secondID)
 				If score > highest
 					highest = score
 				EndIf
@@ -181,6 +212,8 @@ Function Consider()
 					If score > bestScore
 						bestScore = score
 						best = i
+						bestFirst = firstID
+						bestSecond = secondID
 					EndIf
 				Else
 					tooLow += 1
@@ -200,7 +233,7 @@ Function Consider()
 		EndIf
 
 		If iLogLevel >= 2
-			Self.Table(count, -1)
+			Self.Table(count, 0, 0)
 			Rapport:Core.Trace("chemistry:     -> nobody: " + resting + " resting, " + backedOff + " backed off, " + tooLow + " under the bar" + Self.BestNote(highest))
 		ElseIf tally
 			Rapport:Core.Trace("chemistry: pass " + _passes + " - passed on all " + count + " pair(s): " + resting + " resting, " + backedOff + " backed off after refusals, " + tooLow + " under the " + Self.F2(fMinimumScore) + " bar" + Self.BestNote(highest) + "." + Self.Tally())
@@ -208,8 +241,9 @@ Function Consider()
 		Return
 	EndIf
 
-	Actor akFirst = Game.GetForm(Rapport:Core.CandidateFirst(best)) as Actor
-	Actor akSecond = Game.GetForm(Rapport:Core.CandidateSecond(best)) as Actor
+	; From the captured ids, NOT from the list, which may have been republished.
+	Actor akFirst = Game.GetForm(bestFirst) as Actor
+	Actor akSecond = Game.GetForm(bestSecond) as Actor
 	If akFirst == None || akSecond == None
 		; A failed cast assigns None in Papyrus rather than erroring, so this is
 		; checked rather than assumed.
@@ -219,7 +253,7 @@ Function Consider()
 
 	; From here it is going to act, so say everything.
 	If iLogLevel >= 1
-		Self.Table(count, best)
+		Self.Table(count, bestFirst, bestSecond)
 	EndIf
 
 	String scenario = Self.ScenarioFor(best)
@@ -245,25 +279,59 @@ Function Consider()
 	EndIf
 EndFunction
 
+; Take one consistent copy of what Rapport is offering.
+;
+; Everything after this reads the copy, so the decision and the explanation are
+; about the same list. The signals (where, observers, night) are still read live by
+; index -- they are only used for the ONE pair being acted on, and a stale reading
+; of the room is a cosmetic error rather than a wrong choice.
+Function Snapshot()
+	; A literal 24, because Fallout 4 ships no Utility.psc and there is no
+	; CreateIntArray to size one from a variable. iMaxPairs must match it, and is
+	; what everything else reads -- they are two halves of one number.
+	If _first.Length != iMaxPairs
+		_first = new Int[24]
+		_second = new Int[24]
+		_score = new Float[24]
+	EndIf
+
+	Int count = Rapport:Core.CandidateCount()
+	If count > iMaxPairs
+		count = iMaxPairs
+	EndIf
+
+	Int i = 0
+	While i < count
+		_first[i] = Rapport:Core.CandidateFirst(i)
+		_second[i] = Rapport:Core.CandidateSecond(i)
+		_score[i] = Rapport:Core.CandidateScore(i)
+		i += 1
+	EndWhile
+	_held = count
+EndFunction
+
 ; ---- the table ----------------------------------------------------------------
 ;
 ; One line per published pair: what Rapport scored it, what history added, and the
 ; verdict with the NUMBER behind it. "Resting" without saying how long, or "under the
 ; bar" without saying by how much, is the kind of line that looks like an explanation
 ; and is not one.
-Function Table(Int aiCount, Int aiChosen)
+Function Table(Int aiCount, Int aiChosenFirst, Int aiChosenSecond)
 	Rapport:Core.Trace("chemistry: pass " + _passes + " | " + aiCount + " pair(s) published | score + history = total | verdict")
 
 	Int i = 0
 	While i < aiCount
-		Int firstID = Rapport:Core.CandidateFirst(i)
-		Int secondID = Rapport:Core.CandidateSecond(i)
+		Int firstID = _first[i]
+		Int secondID = _second[i]
 		If firstID != 0 && secondID != 0
-			Float raw = Rapport:Core.CandidateScore(i)
+			Float raw = _score[i]
 			Float hist = Self.RepeatBonus(firstID, secondID)
 
+			; Marked by WHO, not by index. The list can be republished between the
+			; decision and this table, and an index would then point at whoever
+			; happens to be in that slot now.
 			String mark = "     "
-			If i == aiChosen
+			If firstID == aiChosenFirst && secondID == aiChosenSecond
 				mark = "  -> "
 			EndIf
 
