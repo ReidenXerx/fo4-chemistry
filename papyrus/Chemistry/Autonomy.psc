@@ -45,6 +45,14 @@ Float Property fMinimumScore = 0.90 AutoReadOnly
 Float Property fRepeatBonus = 0.15 AutoReadOnly
 Float Property fRepeatCap = 0.45 AutoReadOnly
 
+; How often to say what it saw, in polls. A Chemistry that decides not to act says
+; nothing otherwise, and then "nothing is happening here" and "Chemistry is not
+; running" look exactly alike in the log -- the worst shape a failure can have.
+Int Property iReportEvery = 10 AutoReadOnly
+
+; Polls since the last report. Lives in the save with the rest of this script.
+Int _polls = 0
+
 ; ---- lifecycle ----------------------------------------------------------------
 
 Event OnQuestInit()
@@ -86,13 +94,28 @@ EndEvent
 ; ---- the decision -------------------------------------------------------------
 
 Function Consider()
+	_polls += 1
+	Bool report = _polls >= iReportEvery
+	If report
+		_polls = 0
+	EndIf
+
 	Int count = Rapport:Core.CandidateCount()
 	If count <= 0
+		If report
+			Rapport:Core.Trace("chemistry: nothing published this pass - no viable pair anywhere loaded")
+		EndIf
 		Return
 	EndIf
 
 	Int best = -1
 	Float bestScore = 0.0
+
+	; These exist only so the report can say WHY nothing happened. A count of zero
+	; acted-on with no reason attached is what wastes a morning.
+	Int resting = 0
+	Int tooLow = 0
+	Float highest = 0.0
 
 	Int i = 0
 	While i < count
@@ -101,17 +124,31 @@ Function Consider()
 
 		; A published id can have unloaded since the pass that measured it. Rapport
 		; hands out ids rather than Actors for exactly this reason.
-		If firstID != 0 && secondID != 0 && Self.Rested(firstID) && Self.Rested(secondID)
-			Float score = Rapport:Core.CandidateScore(i) + Self.RepeatBonus(firstID, secondID)
-			If score >= fMinimumScore && score > bestScore
-				bestScore = score
-				best = i
+		If firstID != 0 && secondID != 0
+			If Self.Rested(firstID) && Self.Rested(secondID)
+				Float score = Rapport:Core.CandidateScore(i) + Self.RepeatBonus(firstID, secondID)
+				If score > highest
+					highest = score
+				EndIf
+				If score >= fMinimumScore
+					If score > bestScore
+						bestScore = score
+						best = i
+					EndIf
+				Else
+					tooLow += 1
+				EndIf
+			Else
+				resting += 1
 			EndIf
 		EndIf
 		i += 1
 	EndWhile
 
 	If best < 0
+		If report
+			Rapport:Core.Trace("chemistry: passed on all " + count + " pair(s) - " + resting + " still resting, " + tooLow + " under the " + fMinimumScore + " bar (best was " + highest + ")")
+		EndIf
 		Return
 	EndIf
 
@@ -137,7 +174,7 @@ Function Consider()
 	EndIf
 
 	If Rapport:Core.RequestScene(akFirst, akSecond, scenario)
-		Rapport:Core.Trace("chemistry: asked for \"" + scenario + "\" at score " + bestScore + " (quality " + quality + ")")
+		Rapport:Core.Trace("chemistry: asked for \"" + scenario + "\" at score " + bestScore + " (quality " + quality + ", chosen from " + count + " pair(s), " + resting + " resting)")
 	EndIf
 	; A False needs nothing said: it means a scene is already running or the bridge
 	; is not up, both transient, and the next poll is already scheduled.
