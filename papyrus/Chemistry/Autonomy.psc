@@ -53,6 +53,12 @@ Float Property fRepeatCap = 0.45 AutoReadOnly
 ; one-off refusal should cost almost nothing, and an NPC who is simply broken should
 ; be dropped for good. Two hours after one refusal, four after two, and so on to a
 ; cap of two days.
+; How many onlookers still count as privacy. Deliberately the SAME number as
+; Rapport's observerTolerance in scoring.json, which forgives the first two entirely
+; -- if these two disagree then one layer calls a pair private while the other calls
+; it a crowd, which is exactly the contradiction the first version shipped with.
+Int Property iCrowdTolerance = 2 AutoReadOnly
+
 Float Property fRefusalBackoffHours = 2.0 AutoReadOnly
 Float Property fRefusalBackoffCap = 48.0 AutoReadOnly
 
@@ -335,13 +341,13 @@ String Function Where(Int aiIndex)
 EndFunction
 
 String Function WhyScenario(Int aiIndex)
-	If Rapport:Core.CandidateInterior(aiIndex) && Rapport:Core.CandidateObservers(aiIndex) == 0
-		Return "indoors with nobody watching, so there is time to take. ASSUMPTION, see DESIGN.md"
+	If Rapport:Core.CandidateInterior(aiIndex) && Rapport:Core.CandidateObservers(aiIndex) <= iCrowdTolerance
+		Return "indoors and nobody who counts as a crowd, so there is time to take"
 	EndIf
-	If Rapport:Core.CandidateObservers(aiIndex) <= 1
-		Return "one onlooker or fewer: unhurried but not private. ASSUMPTION, see DESIGN.md"
+	If Rapport:Core.CandidateObservers(aiIndex) <= iCrowdTolerance
+		Return "out in the open but not crowded: unhurried, not private"
 	EndIf
-	Return "too busy for anything long. ASSUMPTION, see DESIGN.md"
+	Return "more than " + iCrowdTolerance + " watching, so too busy for anything long"
 EndFunction
 
 String Function QualityName(Int aiQuality)
@@ -475,16 +481,25 @@ Float Function RepeatBonus(Int aiFirst, Int aiSecond)
 	Return bonus
 EndFunction
 
-; ASSUMPTION, not a settled decision -- flagged in DESIGN.md as the first thing to
-; confirm. The reasoning: privacy buys time. Somewhere private and empty is where two
-; people would take their time; a corner of a market is where they would not.
+; DESIGN C-6. Privacy buys time, and the line between private and public is the same
+; number Rapport already uses.
+;
+; The first version of this used 0 and 1, and the log made it obviously wrong within
+; two scenes: it called "quickie" on a pair with two onlookers, while Rapport scored
+; those same two onlookers at exactly zero cost. One layer said two watchers are
+; nothing and the other said too busy for anything long. Owner settled it on the side
+; of Rapport's own tolerance -- in this world nobody is shy, and two people nearby is
+; not a crowd.
+;
+; So: indoors and uncrowded gets the long story, out in the open but uncrowded gets
+; the slow one, and an actual crowd gets something brief.
 ;
 ; The player is deliberately not consulted (DESIGN C-4).
 String Function ScenarioFor(Int aiIndex)
-	If Rapport:Core.CandidateInterior(aiIndex) && Rapport:Core.CandidateObservers(aiIndex) == 0
+	If Rapport:Core.CandidateInterior(aiIndex) && Rapport:Core.CandidateObservers(aiIndex) <= iCrowdTolerance
 		Return "athome"
 	EndIf
-	If Rapport:Core.CandidateObservers(aiIndex) <= 1
+	If Rapport:Core.CandidateObservers(aiIndex) <= iCrowdTolerance
 		Return "tender"
 	EndIf
 	Return "quickie"

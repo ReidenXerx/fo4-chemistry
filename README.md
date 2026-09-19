@@ -24,8 +24,9 @@ If something here starts looking useful to another mod, it is in the wrong repos
 First version written, never run. Rapport's addon API landed today and Chemistry is
 two files against it: a generated esp with one quest, and one script.
 
-Decisions are in `DESIGN.md`. One thing in there is an assumption rather than a
-decision -- which scenario suits which surroundings -- and it is marked as such.
+Decisions are in `DESIGN.md`, C-1 to C-7. Nothing in there is an assumption any
+more: the last one, which scenario suits which surroundings, was settled by watching
+the log disagree with Rapport's own crowd tolerance.
 
     python tools/make_esp.py data/Chemistry.esp
     scripts/build-papyrus.ps1

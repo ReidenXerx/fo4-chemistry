@@ -69,20 +69,50 @@ and forgiving, which is what was wanted.
 
 Chemistry adds nothing here. It reads `CandidateScore`, which already includes it.
 
-## UNCONFIRMED - which scenario fits where
+## C-6 - privacy is the same number Rapport already uses (2026-09-20)
 
-`ScenarioFor` is an ASSUMPTION, flagged here as the first thing to check:
+Owner's decision, taken after watching it get this wrong. Which story fits where:
 
 | where they are | scenario |
 | --- | --- |
-| indoors, nobody watching | `athome` - five stages, unhurried, ends in a climax |
-| one onlooker or fewer | `tender` - three stages, slow |
-| anywhere busier | `quickie` - one stage, no guaranteed ending |
+| indoors, at most 2 watching | `athome` - five stages, unhurried, ends in a climax |
+| out in the open, at most 2 watching | `tender` - three stages, slow |
+| more than 2 watching | `quickie` - one stage, no guaranteed ending |
 
-The reasoning is that privacy buys time: somewhere private and empty is where two
-people would take their time, and a corner of a market is where they would not. It
-follows the same "believability over frequency" line as the rest, but nobody has
-chosen it and it has never been watched in game.
+The first version used 0 and 1, and the log showed it wrong inside two scenes. It
+chose `quickie` for a pair with two onlookers, while Rapport scored those same two
+onlookers at **exactly zero cost** -- `observerTolerance` is 2, and the crowd penalty
+does not begin until the third. One layer was calling two watchers nothing and the
+other was calling them too busy for anything long.
+
+Owner settled it on the side of Rapport's tolerance: *"we tolerate 2 people to engage
+at home indoors - it fits the post-apocalyptic vibe"*. In this world nobody is shy,
+and two people nearby is not a crowd.
+
+So `iCrowdTolerance` in Chemistry is deliberately the same number as
+`observerTolerance` in Rapport's `scoring.json`. If those two ever disagree, one layer
+calls a pair private while the other calls it crowded, which is the contradiction that
+shipped the first time.
+
+Retroactively: both of this morning's scenes would have been `tender` rather than
+`quickie`.
+
+## C-7 - stop asking the NPC who always says no (2026-09-20)
+
+AAF silently refuses an actor carrying its busy keywords, and a request that died
+without cleaning up leaves that flag on an NPC for the rest of the save. One is in
+that state on the reference install -- not from anything Rapport did -- and because he
+stands close to somebody he scores top of the list and burned the first request of the
+session.
+
+An escalating backoff on refusals: `fRefusalBackoffHours` per refusal, capped at
+`fRefusalBackoffCap`. Two game hours after one, four after two, to a cap of two days.
+
+Escalating rather than flat because the two cases want opposite answers: a one-off
+refusal should cost almost nothing, and an NPC who is simply broken should be dropped
+for good. It uses both of Rapport's facts -- `RefusalCount` and `HoursSinceRefusal` --
+because either alone is wrong. The count with no recency avoids somebody forever over
+one bad afternoon; recency alone cannot tell bad luck from a permanent flag.
 
 ## What is deliberately NOT here
 
