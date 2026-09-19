@@ -1,0 +1,7 @@
+# Built, not committed. Both are generated and both are verifiable from source:
+#   data/Chemistry.esp   <- python tools/make_esp.py data/Chemistry.esp
+#   build/papyrus/       <- scripts/build-papyrus.ps1
+# Committing either would mean a checkout could disagree with its own sources and
+# nothing would say which was right.
+build/
+data/*.esp

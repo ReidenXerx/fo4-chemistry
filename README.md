@@ -21,9 +21,19 @@ If something here starts looking useful to another mod, it is in the wrong repos
 
 ## Status
 
-Not started. Rapport does not yet expose a public API for addons, and until it does there is
-nothing for Chemistry to sit on. Rapport currently carries a temporary stand-in for this
-decision inside its scheduler, marked as such, which moves here when the API exists.
+First version written, never run. Rapport's addon API landed today and Chemistry is
+two files against it: a generated esp with one quest, and one script.
+
+Decisions are in `DESIGN.md`. One thing in there is an assumption rather than a
+decision -- which scenario suits which surroundings -- and it is marked as such.
+
+    python tools/make_esp.py data/Chemistry.esp
+    scripts/build-papyrus.ps1
+    scripts/deploy-dev.ps1
+
+Then, in Vortex: press Deploy (these are new files, so the hardlinks do not exist
+yet), and enable `Chemistry.esp` after `Rapport.esp`. Chemistry logs into
+`Rapport.log`, prefixed `chemistry:`.
 
 What Rapport has already proven in game, which Chemistry inherits for free:
 
@@ -32,5 +42,5 @@ What Rapport has already proven in game, which Chemistry inherits for free:
 | Candidate selection | 20-30 candidates from ~50 loaded actors, 0.02 ms a pass |
 | Adults only | Engine child check verified in Diamond City, plus a race allow-list that fails closed |
 | Never a quest actor | Alias instances with running packages are skipped |
-| Pair scoring | Proximity, shared faction, indoors, night, onlookers, player presence |
-| A real scene | Geneva and a Diamond City guard, 2026-09-18 |
+| Pair scoring | Proximity, shared faction, indoors, night, onlookers |
+| Scenes end to end | Tree chosen at StartScene, faces following the act, the climax face on the frame the animation reaches it, aftermath in the place it belongs |
