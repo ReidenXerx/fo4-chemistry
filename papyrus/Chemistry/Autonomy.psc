@@ -375,6 +375,17 @@ EndFunction
 ; table that is the difference between scannable and not, and being scannable is the
 ; whole point of the table.
 String Function F2(Float afValue)
+	; Guarded, because one of the values that reaches this is 1e9: HoursSinceScene
+	; returns it for an actor who has never had a scene. (1e9 * 100) as Int overflows
+	; a 32-bit Int and prints garbage. Every current caller happens to filter that
+	; out first, which is exactly the kind of accident that stops being true later.
+	If afValue > 1000000.0
+		Return "never"
+	EndIf
+	If afValue < -1000000.0
+		Return "?"
+	EndIf
+
 	Bool negative = afValue < 0.0
 	Float size = afValue
 	If negative
