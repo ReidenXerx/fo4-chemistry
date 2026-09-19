@@ -1,0 +1,43 @@
+# Normalise line endings in the repository, check out native on Windows.
+* text=auto
+
+# ---- source ---------------------------------------------------------------
+*.py      text diff=python
+*.json    text
+*.md      text
+*.txt     text
+
+# Papyrus. The compiler is happy with either ending; normalise so a diff is a
+# real diff.
+*.psc     text
+*.flg     text
+
+# PowerShell. CRLF deliberately: these are run by Windows PowerShell on the
+# machine that builds the mod.
+*.ps1     text eol=crlf
+*.psm1    text eol=crlf
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
+
+# Logs captured from a real session are EVIDENCE and are quoted verbatim, so
+# they must not be rewritten by a line-ending filter.
+*.log     -text
+
+# ---- binaries -------------------------------------------------------------
+# Both of these are generated and ignored; declared so that one committed by
+# hand is never mangled.
+*.pex     binary
+*.esp     binary
+*.esm     binary
+*.esl     binary
+*.ba2     binary
+*.dds     binary
+*.nif     binary
+*.png     binary
+*.jpg     binary
+
+# ---- what is not part of the mod -----------------------------------------
+.github/        export-ignore
+.gitattributes  export-ignore
+.gitignore      export-ignore
+CONTRIBUTING.md export-ignore

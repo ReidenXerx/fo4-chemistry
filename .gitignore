@@ -5,3 +5,21 @@
 # nothing would say which was right.
 build/
 data/*.esp
+
+# Python bytecode from tools/
+__pycache__/
+*.pyc
+
+# Editor and toolchain leftovers. These carry absolute paths from whichever
+# machine produced them, which is the one thing a public repository should not
+# be shipping.
+.vs/
+.vscode/
+.idea/
+*.user
+
+# Logs pulled off a machine for debugging. Rapport.log contains the Windows user
+# name in its file paths; commit one deliberately, into docs/runs/, or not at
+# all.
+*.log
+!docs/runs/*.log
