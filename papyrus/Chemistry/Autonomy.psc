@@ -36,6 +36,21 @@ Int Property kPollTimer = 1 AutoReadOnly
 Float Property fPollSeconds = 30.0 AutoReadOnly
 Float Property fCooldownHours = 24.0 AutoReadOnly
 Float Property fMinimumScore = 0.90 AutoReadOnly
+; Somewhere that belongs to them. Added ON TOP of Rapport's indoor bonus rather
+; than replacing it: the indoor weight lives in Rapport's scoring.json, and
+; subtracting it from here would hardcode a second copy of somebody else's config.
+; The effect is what was asked for either way -- their own place outscores a
+; generic interior by this much.
+;
+; Rapport cannot measure this. Its scoring is C++ and CommonLibF4 leaves
+; TESObjectCELL forward-declared, so cell ownership is only reachable from Papyrus,
+; which is here.
+Float Property fOwnPlaceBonus = 0.45 AutoReadOnly
+
+; Their faction's place -- a settlement's shared building rather than a bedroom.
+; Worth something, worth less than their own.
+Float Property fFactionPlaceBonus = 0.20 AutoReadOnly
+
 Float Property fRepeatBonus = 0.15 AutoReadOnly
 Float Property fRepeatCap = 0.45 AutoReadOnly
 
@@ -88,6 +103,7 @@ Int _blockedResting = 0   ; passes where everything eligible was resting
 Int _blockedBar = 0       ; passes where the best was under the bar
 Int _blockedEmpty = 0     ; passes where Rapport published nothing
 
+
 ; ONE read of Rapport's list per pass, held here while this pass decides and then
 ; explains itself.
 ;
@@ -99,6 +115,14 @@ Int _blockedEmpty = 0     ; passes where Rapport published nothing
 Int[] _first
 Int[] _second
 Float[] _score
+
+; Whose place, worked out ONCE per pair per pass and kept.
+;
+; WhosePlace costs a form lookup, a cell read, an owner read and two base reads for
+; every interior pair. The decision needs it and so does the table, and computing it
+; twice is both wasteful and a way for the two to disagree if an actor moves between
+; them -- which is the bug this snapshot exists to prevent.
+Int[] _whose
 Int _held = 0
 
 ; ---- lifecycle ----------------------------------------------------------------
@@ -204,7 +228,7 @@ Function Consider()
 			If !Self.Available(firstID) || !Self.Available(secondID)
 				backedOff += 1
 			ElseIf Self.Rested(firstID) && Self.Rested(secondID)
-				Float score = _score[i] + Self.RepeatBonus(firstID, secondID)
+				Float score = _score[i] + Self.RepeatBonus(firstID, secondID) + Self.PlaceBonus(i)
 				If score > highest
 					highest = score
 				EndIf
@@ -293,6 +317,7 @@ Function Snapshot()
 		_first = new Int[24]
 		_second = new Int[24]
 		_score = new Float[24]
+		_whose = new Int[24]
 	EndIf
 
 	Int count = Rapport:Core.CandidateCount()
@@ -305,6 +330,7 @@ Function Snapshot()
 		_first[i] = Rapport:Core.CandidateFirst(i)
 		_second[i] = Rapport:Core.CandidateSecond(i)
 		_score[i] = Rapport:Core.CandidateScore(i)
+		_whose[i] = Self.WhosePlace(i, _first[i], _second[i])
 		i += 1
 	EndWhile
 	_held = count
@@ -317,7 +343,7 @@ EndFunction
 ; bar" without saying by how much, is the kind of line that looks like an explanation
 ; and is not one.
 Function Table(Int aiCount, Int aiChosenFirst, Int aiChosenSecond)
-	Rapport:Core.Trace("chemistry: pass " + _passes + " | " + aiCount + " pair(s) published | score + history = total | verdict")
+	Rapport:Core.Trace("chemistry: pass " + _passes + " | " + aiCount + " pair(s) published | score + bonus = total | verdict  (bonus = shared history and whose place it is)")
 
 	Int i = 0
 	While i < aiCount
@@ -325,7 +351,7 @@ Function Table(Int aiCount, Int aiChosenFirst, Int aiChosenSecond)
 		Int secondID = _second[i]
 		If firstID != 0 && secondID != 0
 			Float raw = _score[i]
-			Float hist = Self.RepeatBonus(firstID, secondID)
+			Float hist = Self.RepeatBonus(firstID, secondID) + Self.PlaceBonus(i)
 
 			; Marked by WHO, not by index. The list can be republished between the
 			; decision and this table, and an index would then point at whoever
@@ -335,14 +361,14 @@ Function Table(Int aiCount, Int aiChosenFirst, Int aiChosenSecond)
 				mark = "  -> "
 			EndIf
 
-			Rapport:Core.Trace("chemistry:" + mark + "[" + i + "] " + Self.WhoByID(firstID, secondID) + " | " + Self.F2(raw) + " + " + Self.F2(hist) + " = " + Self.F2(raw + hist) + " | " + Self.Verdict(firstID, secondID, raw + hist))
+			Rapport:Core.Trace("chemistry:" + mark + "[" + i + "] " + Self.WhoByID(firstID, secondID) + " | " + Self.F2(raw) + " + " + Self.F2(hist) + " = " + Self.F2(raw + hist) + " | " + Self.Verdict(firstID, secondID, raw + hist, _whose[i]))
 		EndIf
 		i += 1
 	EndWhile
 EndFunction
 
 ; Why this pair is or is not available, with the number that decided it.
-String Function Verdict(Int aiFirst, Int aiSecond, Float afTotal)
+String Function Verdict(Int aiFirst, Int aiSecond, Float afTotal, Int aiWhose)
 	If !Self.Available(aiFirst)
 		Return "BACKED OFF - " + Self.NameOf(aiFirst) + " refused " + Rapport:Core.RefusalCount(aiFirst) + "x, last " + Self.F2(Rapport:Core.HoursSinceRefusal(aiFirst)) + "h ago, waiting " + Self.F2(Self.BackoffFor(aiFirst)) + "h"
 	EndIf
@@ -364,10 +390,16 @@ String Function Verdict(Int aiFirst, Int aiSecond, Float afTotal)
 	EndIf
 
 	Int met = Rapport:Core.PairSceneCount(aiFirst, aiSecond)
+	String note = "eligible"
 	If met > 0
-		Return "eligible, together " + met + " time(s) before"
+		note = note + ", together " + met + " time(s) before"
 	EndIf
-	Return "eligible"
+	If aiWhose == 2
+		note = note + ", and one of them lives here"
+	ElseIf aiWhose == 1
+		note = note + ", in their faction's place"
+	EndIf
+	Return note
 EndFunction
 
 ; ---- the measurements, in words -----------------------------------------------
@@ -409,6 +441,13 @@ String Function Where(Int aiIndex)
 EndFunction
 
 String Function WhyScenario(Int aiIndex)
+	Int whose = _whose[aiIndex]
+	If whose == 2
+		Return "one of them lives here, so the room is theirs however many are about"
+	EndIf
+	If whose == 1
+		Return "their faction's building - not private, but not a street either"
+	EndIf
 	If Rapport:Core.CandidateInterior(aiIndex) && Rapport:Core.CandidateObservers(aiIndex) <= iCrowdTolerance
 		Return "indoors and nobody who counts as a crowd, so there is time to take"
 	EndIf
@@ -511,6 +550,54 @@ EndFunction
 
 ; ---- policy -------------------------------------------------------------------
 
+; Whose place is this?
+;
+;   2  one of them owns this cell
+;   1  their faction owns it
+;   0  nobody's, or somebody else's, or outdoors
+;
+; Only asked for INTERIOR pairs. An exterior cell being unowned says nothing, and
+; asking would cost two native calls for every actor in every pair on every pass --
+; up to forty-eight of them -- to learn nothing.
+Int Function WhosePlace(Int aiIndex, Int aiFirst, Int aiSecond)
+	If !Rapport:Core.CandidateInterior(aiIndex)
+		Return 0
+	EndIf
+
+	Actor a = Game.GetForm(aiFirst) as Actor
+	Actor b = Game.GetForm(aiSecond) as Actor
+	If a == None || b == None
+		Return 0
+	EndIf
+
+	Cell where = a.GetParentCell()
+	If where == None
+		Return 0
+	EndIf
+
+	ActorBase owner = where.GetActorOwner()
+	If owner != None && (owner == a.GetActorBase() || owner == b.GetActorBase())
+		Return 2
+	EndIf
+
+	Faction owningFaction = where.GetFactionOwner()
+	If owningFaction != None && (a.IsInFaction(owningFaction) || b.IsInFaction(owningFaction))
+		Return 1
+	EndIf
+	Return 0
+EndFunction
+
+; From the snapshot, never recomputed.
+Float Function PlaceBonus(Int aiIndex)
+	Int whose = _whose[aiIndex]
+	If whose == 2
+		Return fOwnPlaceBonus
+	ElseIf whose == 1
+		Return fFactionPlaceBonus
+	EndIf
+	Return 0.0
+EndFunction
+
 ; How long this actor must wait after their refusals, escalating with how many.
 Float Function BackoffFor(Int aiFormID)
 	Int refusals = Rapport:Core.RefusalCount(aiFormID)
@@ -564,6 +651,13 @@ EndFunction
 ;
 ; The player is deliberately not consulted (DESIGN C-4).
 String Function ScenarioFor(Int aiIndex)
+	; Their own place earns the long story whatever the room count. Somebody walking
+	; through your house is not the same as an audience in a market, and the whole
+	; point of knowing whose place it is, is to stop treating them alike.
+	Int whose = _whose[aiIndex]
+	If whose == 2
+		Return "athome"
+	EndIf
 	If Rapport:Core.CandidateInterior(aiIndex) && Rapport:Core.CandidateObservers(aiIndex) <= iCrowdTolerance
 		Return "athome"
 	EndIf

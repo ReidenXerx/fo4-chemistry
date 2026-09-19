@@ -114,6 +114,44 @@ for good. It uses both of Rapport's facts -- `RefusalCount` and `HoursSinceRefus
 because either alone is wrong. The count with no recency avoids somebody forever over
 one bad afternoon; recency alone cannot tell bad luck from a permanent flag.
 
+## C-8 - whose place is it (2026-09-20)
+
+Owner: knowing WHICH indoors is the immersive lever. It is, and only one form of it
+is cheaply reachable.
+
+What is not: the location's TYPE. `Location.HasKeyword` needs an actual Keyword
+form and Papyrus has no lookup by name, so it would take hardcoded vanilla form ids;
+`Cell` has no name accessor at all; and CommonLibF4 leaves both `BGSLocation` and
+`TESObjectCELL` forward-declared, so the plugin cannot read either without
+reverse-engineered layouts. All three checked rather than assumed.
+
+What is: **whose** place it is. `Cell.GetActorOwner()` and `GetFactionOwner()` are
+one call each, need nothing hardcoded, and say something better than a type does --
+*these two are in his house* rather than *this is a dwelling*.
+
+    2  one of them owns this cell      +0.45 and always "athome"
+    1  their faction owns it           +0.20
+    0  nobody's, somebody else's, outdoors
+
+Their own place earns the long story **whatever the room count**. Somebody walking
+through your house is not an audience in a market, and refusing to treat those alike
+is the entire point of knowing whose place it is.
+
+Added ON TOP of Rapport's indoor bonus rather than replacing it. Owner asked for it
+"instead of the usual indoor bonus"; the effect is the same either way, and
+subtracting would mean hardcoding a copy of Rapport's `interior` weight here, where
+it would silently rot the moment somebody edited `scoring.json`.
+
+**This has to live in Chemistry.** Rapport's scoring is C++ and cannot see cell
+ownership at all. It is the first policy input the framework is structurally unable
+to measure, which is a reasonable line: Rapport reports what it can see, and the
+addon adds what only Papyrus can reach.
+
+Asked for INTERIOR pairs only. An unowned exterior cell says nothing, and asking
+would cost several native calls for every actor of every pair on every pass to learn
+it. Worked out once per pass into the snapshot, because the decision and the table
+both need it and computing it twice is how they come to disagree.
+
 ## What is deliberately NOT here
 
 - Actor enumeration, filtering, the child and race checks, the quest-actor check.
