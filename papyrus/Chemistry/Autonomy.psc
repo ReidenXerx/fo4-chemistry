@@ -102,6 +102,7 @@ Int _acted = 0
 Int _blockedResting = 0   ; passes where everything eligible was resting
 Int _blockedBar = 0       ; passes where the best was under the bar
 Int _blockedEmpty = 0     ; passes where Rapport published nothing
+Int _blockedBusy = 0      ; passes skipped because a scene was already running
 
 
 ; ONE read of Rapport's list per pass, held here while this pass decides and then
@@ -148,6 +149,7 @@ Function Connect()
 	_blockedResting = 0
 	_blockedBar = 0
 	_blockedEmpty = 0
+	_blockedBusy = 0
 	_polls = 0
 
 	; Cancel before starting, unconditionally. Both OnQuestInit and OnInit can fire,
@@ -182,6 +184,18 @@ Function Consider()
 	Bool tally = _polls >= iTallyEvery
 	If tally
 		_polls = 0
+	EndIf
+
+	; Nothing to decide while one is already playing, and deciding anyway is not
+	; free: it reads every candidate, scores them, works out whose place it is and
+	; prints a table -- all to be told no. Observed four polls in a row doing exactly
+	; that during one scene.
+	If Rapport:Core.Busy()
+		_blockedBusy += 1
+		If tally
+			Rapport:Core.Trace("chemistry: pass " + _passes + " - a scene is already running, so nothing was considered." + Self.Tally())
+		EndIf
+		Return
 	EndIf
 
 	Self.Snapshot()
@@ -471,7 +485,7 @@ String Function QualityName(Int aiQuality)
 EndFunction
 
 String Function Tally()
-	Return " [this load: " + _passes + " passes, " + _acted + " acted, " + _blockedResting + " all-resting, " + _blockedBar + " under-bar, " + _blockedEmpty + " nothing-published]"
+	Return " [this load: " + _passes + " passes, " + _acted + " acted, " + _blockedBusy + " while-busy, " + _blockedResting + " all-resting, " + _blockedBar + " under-bar, " + _blockedEmpty + " nothing-published]"
 EndFunction
 
 String Function BestNote(Float afHighest)
