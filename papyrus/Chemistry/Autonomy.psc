@@ -39,6 +39,23 @@ Float Property fMinimumScore = 0.90 AutoReadOnly
 Float Property fRepeatBonus = 0.15 AutoReadOnly
 Float Property fRepeatCap = 0.45 AutoReadOnly
 
+; Backing off an actor AAF keeps refusing, per refusal, in GAME hours, and the cap.
+;
+; Not a nicety. AAF silently refuses an actor carrying its busy keywords, and a
+; request that died without cleaning up leaves that flag on an NPC for the REST OF
+; THE SAVE. Observed on this install first thing: Johnny Friendly is permanently
+; stuck, scores top of the list because he stands close to somebody, and burns the
+; first request of every session. Rapport benches him for 300 real seconds after a
+; failure, which at a 30-second poll means he comes back and wastes another one
+; forever.
+;
+; Escalating rather than flat, because the two cases need different answers: a
+; one-off refusal should cost almost nothing, and an NPC who is simply broken should
+; be dropped for good. Two hours after one refusal, four after two, and so on to a
+; cap of two days.
+Float Property fRefusalBackoffHours = 2.0 AutoReadOnly
+Float Property fRefusalBackoffCap = 48.0 AutoReadOnly
+
 ; ---- how much it says ---------------------------------------------------------
 ;
 ;   0  only when it acts, plus a tally every iTallyEvery polls
@@ -135,6 +152,7 @@ Function Consider()
 	Int best = -1
 	Float bestScore = 0.0
 	Int resting = 0
+	Int backedOff = 0
 	Int tooLow = 0
 	Float highest = -99.0
 
@@ -146,7 +164,9 @@ Function Consider()
 		; A published id can have unloaded since the pass that measured it. Rapport
 		; hands out ids rather than Actors for exactly this reason.
 		If firstID != 0 && secondID != 0
-			If Self.Rested(firstID) && Self.Rested(secondID)
+			If !Self.Available(firstID) || !Self.Available(secondID)
+				backedOff += 1
+			ElseIf Self.Rested(firstID) && Self.Rested(secondID)
 				Float score = Rapport:Core.CandidateScore(i) + Self.RepeatBonus(firstID, secondID)
 				If score > highest
 					highest = score
@@ -175,9 +195,9 @@ Function Consider()
 
 		If iLogLevel >= 2
 			Self.Table(count, -1)
-			Rapport:Core.Trace("chemistry:     -> nobody: " + resting + " resting, " + tooLow + " under the bar" + Self.BestNote(highest))
+			Rapport:Core.Trace("chemistry:     -> nobody: " + resting + " resting, " + backedOff + " backed off, " + tooLow + " under the bar" + Self.BestNote(highest))
 		ElseIf tally
-			Rapport:Core.Trace("chemistry: pass " + _passes + " - passed on all " + count + " pair(s): " + resting + " resting, " + tooLow + " under the " + Self.F2(fMinimumScore) + " bar" + Self.BestNote(highest) + "." + Self.Tally())
+			Rapport:Core.Trace("chemistry: pass " + _passes + " - passed on all " + count + " pair(s): " + resting + " resting, " + backedOff + " backed off after refusals, " + tooLow + " under the " + Self.F2(fMinimumScore) + " bar" + Self.BestNote(highest) + "." + Self.Tally())
 		EndIf
 		Return
 	EndIf
@@ -249,6 +269,13 @@ EndFunction
 
 ; Why this pair is or is not available, with the number that decided it.
 String Function Verdict(Int aiFirst, Int aiSecond, Float afTotal)
+	If !Self.Available(aiFirst)
+		Return "BACKED OFF - " + Self.NameOf(aiFirst) + " refused " + Rapport:Core.RefusalCount(aiFirst) + "x, last " + Self.F2(Rapport:Core.HoursSinceRefusal(aiFirst)) + "h ago, waiting " + Self.F2(Self.BackoffFor(aiFirst)) + "h"
+	EndIf
+	If !Self.Available(aiSecond)
+		Return "BACKED OFF - " + Self.NameOf(aiSecond) + " refused " + Rapport:Core.RefusalCount(aiSecond) + "x, last " + Self.F2(Rapport:Core.HoursSinceRefusal(aiSecond)) + "h ago, waiting " + Self.F2(Self.BackoffFor(aiSecond)) + "h"
+	EndIf
+
 	Float restFirst = Rapport:Core.HoursSinceScene(aiFirst)
 	Float restSecond = Rapport:Core.HoursSinceScene(aiSecond)
 
@@ -409,6 +436,28 @@ String Function F2(Float afValue)
 EndFunction
 
 ; ---- policy -------------------------------------------------------------------
+
+; How long this actor must wait after their refusals, escalating with how many.
+Float Function BackoffFor(Int aiFormID)
+	Int refusals = Rapport:Core.RefusalCount(aiFormID)
+	If refusals <= 0
+		Return 0.0
+	EndIf
+	Float wait = fRefusalBackoffHours * refusals
+	If wait > fRefusalBackoffCap
+		Return fRefusalBackoffCap
+	EndIf
+	Return wait
+EndFunction
+
+; False while an actor AAF keeps refusing is still in their backoff.
+Bool Function Available(Int aiFormID)
+	Float wait = Self.BackoffFor(aiFormID)
+	If wait <= 0.0
+		Return True
+	EndIf
+	Return Rapport:Core.HoursSinceRefusal(aiFormID) >= wait
+EndFunction
 
 Bool Function Rested(Int aiFormID)
 	Return Rapport:Core.HoursSinceScene(aiFormID) >= fCooldownHours
