@@ -238,7 +238,17 @@ Function Consider()
 
 		; A published id can have unloaded since the pass that measured it. Rapport
 		; hands out ids rather than Actors for exactly this reason.
-		If firstID != 0 && secondID != 0
+		; Rapport publishes SORTED by score, and the most any bonus can add is the
+		; repeat cap plus the place cap. So once a pair cannot beat the best already
+		; found even with everything, nothing further down can either -- and every
+		; pair skipped here is five ledger lookups not made.
+		;
+		; Safe for the report: the resting / backed-off / under-bar counters are only
+		; read in the "nobody qualified" branch, which is reached only when there is
+		; no best, in which case this never triggers.
+		If best >= 0 && (_score[i] + fRepeatCap + fOwnPlaceBonus) <= bestScore
+			i = count
+		ElseIf firstID != 0 && secondID != 0
 			If !Self.Available(firstID) || !Self.Available(secondID)
 				backedOff += 1
 			ElseIf Self.Rested(firstID) && Self.Rested(secondID)
@@ -289,25 +299,38 @@ Function Consider()
 		Return
 	EndIf
 
-	; From here it is going to act, so say everything.
+	; ACT FIRST, EXPLAIN AFTER.
+	;
+	; The table costs about three seconds of Papyrus -- measured at 190 ms a row, and
+	; the VM yields between statements so it is wall time, not CPU. Logging before
+	; asking meant every scene was requested three seconds after it was decided, with
+	; the two of them still walking around in between. The decision is already made
+	; by this point; printing it is not part of making it.
+	String scenario = Self.ScenarioFor(best)
+	Int quality = Rapport:Core.CanRun(scenario, akFirst, akSecond)
+	Bool took = False
+	If quality >= 0
+		took = Rapport:Core.RequestScene(akFirst, akSecond, scenario)
+		If took
+			_acted += 1
+		EndIf
+	EndIf
+
+	; Now say what happened, at leisure.
 	If iLogLevel >= 1
 		Self.Table(count, bestFirst, bestSecond)
 	EndIf
-
-	String scenario = Self.ScenarioFor(best)
 	Rapport:Core.Trace("chemistry:     -> " + Self.Who(akFirst, akSecond) + " at " + Self.F2(bestScore) + ", over " + (count - 1) + " other(s)")
 	Rapport:Core.Trace("chemistry:        where: " + Self.Where(best))
 	Rapport:Core.Trace("chemistry:        story: " + scenario + " - " + Self.WhyScenario(best))
-
-	Int quality = Rapport:Core.CanRun(scenario, akFirst, akSecond)
 	Rapport:Core.Trace("chemistry:        CanRun = " + quality + ", " + Self.QualityName(quality))
+
 	If quality < 0
-		Rapport:Core.Trace("chemistry:        NOT ASKING: no scenario by that name. Check scenarios.json.")
+		Rapport:Core.Trace("chemistry:        NOT ASKED: no scenario by that name. Check scenarios.json.")
 		Return
 	EndIf
 
-	If Rapport:Core.RequestScene(akFirst, akSecond, scenario)
-		_acted += 1
+	If took
 		Rapport:Core.Trace("chemistry:        asked, and Rapport took it." + Self.Tally())
 	Else
 		; Transient by definition: a scene is already running, or the bridge is not up.
