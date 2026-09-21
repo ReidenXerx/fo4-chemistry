@@ -54,9 +54,9 @@
           "type": "slider",
           "id": "fPollSeconds:General",
           "text": "Check every (s)",
-          "help": "How often Chemistry looks for a pair.",
+          "help": "How often Chemistry looks for a pair. Not below 20: a pass can take seconds.",
           "valueOptions": {
-            "min": 5.0,
+            "min": 20.0,
             "max": 300.0,
             "step": 5.0,
             "sourceType": "ModSettingFloat"
@@ -219,7 +219,7 @@
           "type": "slider",
           "id": "fRefusalBackoffHours:Refusals",
           "text": "Back off after a refusal (h)",
-          "help": "When AAF refuses someone, wait this long, doubling with each refusal.",
+          "help": "When AAF refuses someone, wait this long, and this much longer again with each further refusal.",
           "valueOptions": {
             "min": 0.0,
             "max": 24.0,
@@ -231,7 +231,7 @@
           "type": "slider",
           "id": "fRefusalBackoffCap:Refusals",
           "text": "Longest back-off (h)",
-          "help": "The doubling stops here.",
+          "help": "The wait never grows past this.",
           "valueOptions": {
             "min": 1.0,
             "max": 168.0,

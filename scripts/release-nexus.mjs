@@ -43,12 +43,11 @@ const fail = (m) => {
   process.exit(1);
 };
 
-// ── version: CMakeLists is the only place that declares one ──────────────
-// make-release.ps1 takes the version from the README, so this must read the
-// same place -- two scripts with two opinions about the version is how a
-// release gets built as one number and published as another.
-const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
-const version = (readme.match(/version\s+(\d+\.\d+\.\d+)/i) ?? [])[1] ?? "0.1.0";
+// ── version: VERSION is the only place that declares one ─────────────────
+// make-release.ps1 reads the same file, strictly, with no fallback: two scripts
+// with two opinions about the version is how a release gets built as one number
+// and published as another.
+const version = fs.readFileSync(path.join(root, "VERSION"), "utf8").trim();
 if (!isReleasableVersion(version)) fail(`${version} is not a plain x.y.z`);
 
 // ── notes: this version's section of CHANGELOG.md, and nothing else ──────

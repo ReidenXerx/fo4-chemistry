@@ -39,7 +39,7 @@ PAGES = [
          "Chemistry's bonuses). Lower means more scenes.", 0.0, 5.0, 0.05),
         ("General", "fCooldownHours", "Rest per person (game hours)", "After a scene, each of the two rests "
          "this long before another.", 0.0, 168.0, 1.0),
-        ("General", "fPollSeconds", "Check every (s)", "How often Chemistry looks for a pair.", 5.0, 300.0, 5.0),
+        ("General", "fPollSeconds", "Check every (s)", "How often Chemistry looks for a pair. Not below 20: a pass can take seconds.", 20.0, 300.0, 5.0),
         ("General", "fNearMissMargin", "Near miss within", "How close to the bar a passed-over pair must be "
          "for the Narrator's 'why nothing happened' line.", 0.0, 2.0, 0.05),
         ("General", "iLogLevel", "Log detail", "0 only actions, 1 the full table when it acts, 2 the table "
@@ -68,8 +68,8 @@ PAGES = [
          "someone married or courting with anyone else costs this times it. 0 turns it off.", 0.0, 2.0, 0.05),
         ("section", "Refusals"),
         ("Refusals", "fRefusalBackoffHours", "Back off after a refusal (h)", "When AAF refuses someone, wait "
-         "this long, doubling with each refusal.", 0.0, 24.0, 0.5),
-        ("Refusals", "fRefusalBackoffCap", "Longest back-off (h)", "The doubling stops here.", 1.0, 168.0, 1.0),
+         "this long, and this much longer again with each further refusal.", 0.0, 24.0, 0.5),
+        ("Refusals", "fRefusalBackoffCap", "Longest back-off (h)", "The wait never grows past this.", 1.0, 168.0, 1.0),
     ]),
 ]
 

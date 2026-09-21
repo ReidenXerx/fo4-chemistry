@@ -38,6 +38,7 @@ Int Property kPollTimer = 1 AutoReadOnly
 ; Off = Chemistry keeps the decision (so Rapport's stand-in does not take it back)
 ; and starts nothing: a pause, not an uninstall.
 Bool bEnabled = True
+Bool _saidNoMcm = False
 Float fPollSeconds = 30.0
 Float fCooldownHours = 24.0
 Float fMinimumScore = 0.90
@@ -167,6 +168,11 @@ Bool[] _night
 Bool[] _faction
 Bool[] _playerNear
 Float[] _distance
+; Computed ONCE per pair in the snapshot, not four times a pass: each asks the engine
+; for associations, and a pass used to make ~290 of those lookups.
+Float[] _faith       ; FaithCost (<= 0)
+Bool[] _couple       ; they are each other's partners
+Bool[] _strays       ; a member is partnered to someone ELSE (an affair if it plays)
 Int _held = 0
 
 ; ---- lifecycle ----------------------------------------------------------------
@@ -207,9 +213,18 @@ EndFunction
 ; poll with no event to register for. Without MCM, the defaults above.
 Function LoadSettings()
 	Self.Defaults()
-	If MCM.IsInstalled()
+	; MCM answers 0 / false for a key it has no settings file for, and "false" for
+	; bEnabled is indistinguishable from the player switching autonomy off. The poll
+	; interval can never legitimately be 0 (its slider starts at 20), so a 0 there
+	; means MCM has nothing for Chemistry: keep the defaults, say so once.
+	If MCM.IsInstalled() && MCM.GetModSettingFloat("Chemistry", "fPollSeconds:General") <= 0.0
+		If !_saidNoMcm
+			Rapport:Core.Trace("chemistry: MCM is installed but has no Chemistry settings (Config/Chemistry/settings.ini missing?) - using the built-in defaults")
+			_saidNoMcm = True
+		EndIf
+	ElseIf MCM.IsInstalled()
 		bEnabled = MCM.GetModSettingBool("Chemistry", "bEnabled:General")
-		fPollSeconds = Self.AtLeast(MCM.GetModSettingFloat("Chemistry", "fPollSeconds:General"), 5.0)
+		fPollSeconds = Self.AtLeast(MCM.GetModSettingFloat("Chemistry", "fPollSeconds:General"), 20.0)
 		fCooldownHours = MCM.GetModSettingFloat("Chemistry", "fCooldownHours:General")
 		fMinimumScore = MCM.GetModSettingFloat("Chemistry", "fMinimumScore:General")
 		fOwnPlaceBonus = MCM.GetModSettingFloat("Chemistry", "fOwnPlaceBonus:Place")
@@ -234,6 +249,13 @@ Function LoadSettings()
 	iCrowdTolerance = Rapport:Core.ObserverTolerance()
 EndFunction
 
+Float Function MaxF(Float a, Float b)
+	If a > b
+		Return a
+	EndIf
+	Return b
+EndFunction
+
 Float Function AtLeast(Float afValue, Float afFloor)
 	If afValue < afFloor
 		Return afFloor
@@ -241,7 +263,35 @@ Float Function AtLeast(Float afValue, Float afFloor)
 	Return afValue
 EndFunction
 
+; Rapport's API version this script needs (major*10000 + minor*100 + patch).
+Int Property iNeedsRapport = 200 AutoReadOnly
+
+Bool Function RapportIsNewEnough()
+	Int have = Rapport:Core.ApiVersion()
+	If have < iNeedsRapport
+		; An older Rapport has no ApiVersion at all, and the call returns 0 after one
+		; Papyrus error - which is the one line worth having instead of an error on
+		; every poll from every missing native.
+		Rapport:Core.Trace("chemistry: Rapport is too old (API " + have + ", needs " + iNeedsRapport + ") - update Rapport; Chemistry stays idle and leaves Rapport's own trigger alone")
+		Return False
+	EndIf
+	Return True
+EndFunction
+
+; A load is a new launch for Rapport's plugin, which forgets the takeover. Re-taken
+; here at once, not at the next poll: in between, Rapport's own trigger was free to
+; start a scene with none of Chemistry's rules.
+Event Actor.OnPlayerLoadGame(Actor akSender)
+	If Self.RapportIsNewEnough()
+		Rapport:Core.TakeOverDecisions("Chemistry")
+	EndIf
+EndEvent
+
 Function Connect()
+	Self.RegisterForRemoteEvent(Game.GetPlayer(), "OnPlayerLoadGame")
+	If !Self.RapportIsNewEnough()
+		Return
+	EndIf
 	; Said every time rather than once: Rapport's plugin starts fresh on every launch
 	; while this script lives in the save, so "already told it" is a belief that would
 	; be wrong exactly once per session. Rapport ignores a repeat.
@@ -284,7 +334,12 @@ Event OnTimer(Int aiTimerID)
 	; none of Chemistry's bonuses. Seen 2026-09-21: the Codmans' scene went out as
 	; "Rapport,autonomy" while Chemistry was polling. One native call; Rapport ignores
 	; a repeat without logging it.
+	If !Self.RapportIsNewEnough()
+		Return
+	EndIf
 	Rapport:Core.TakeOverDecisions("Chemistry")
+	; Idempotent; registers saves made before this existed.
+	Self.RegisterForRemoteEvent(Game.GetPlayer(), "OnPlayerLoadGame")
 
 	Self.LoadSettings()
 	If !bEnabled
@@ -367,13 +422,13 @@ Function Consider()
 		; Safe for the report: the resting / backed-off / under-bar counters are only
 		; read in the "nobody qualified" branch, which is reached only when there is
 		; no best, in which case this never triggers.
-		If best >= 0 && (_score[i] + fBondCap + fOwnPlaceBonus + fPersonaMax) <= bestScore
+		If best >= 0 && (_score[i] + fBondCap + Self.MaxF(fOwnPlaceBonus, fFactionPlaceBonus) + fPersonaMax) <= bestScore
 			i = count
 		ElseIf firstID != 0 && secondID != 0
 			If !Self.Available(firstID) || !Self.Available(secondID)
 				backedOff += 1
 			ElseIf Self.Rested(firstID) && Self.Rested(secondID)
-				Float score = _score[i] + Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.PersonaBonus(i, firstID, secondID) + Self.FaithCost(firstID, secondID)
+				Float score = _score[i] + Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.PersonaBonus(i, firstID, secondID) + _faith[i]
 				If score > highest
 					highest = score
 					missFirst = firstID
@@ -441,7 +496,10 @@ Function Consider()
 	If quality >= 0
 		Self.ReportToNarrator(best, bestFirst, bestSecond, akFirst, akSecond)
 		took = Rapport:Core.RequestScene(akFirst, akSecond, scenario)
-		If took && Self.FaithCost(bestFirst, bestSecond) < 0.0
+		; Whenever someone partnered elsewhere strays - whatever the faithfulness
+		; WEIGHT is (0 turns off the cost, not the record). Rapport holds it until the
+		; scene actually starts.
+		If took && _strays[best]
 			Rapport:Core.NoteAffair(bestFirst, bestSecond)
 		EndIf
 		If took
@@ -497,7 +555,33 @@ Function Snapshot()
 		_playerNear = new Bool[24]
 		_distance = new Float[24]
 	EndIf
+	If !_faith
+		_faith = new Float[24]
+		_couple = new Bool[24]
+		_strays = new Bool[24]
+	EndIf
 
+	; The list is read across many calls, and Rapport republishes it every 20s. A
+	; publish in the middle stitched one slot from two lists - a pair nobody scored.
+	; Read the generation before and after, and read again if it moved.
+	Int tries = 0
+	Int count = 0
+	Int before = -1
+	Int after = 0
+	While before != after && tries < 3
+		tries += 1
+		before = Rapport:Core.CandidateGeneration()
+		count = Self.ReadCandidates()
+		after = Rapport:Core.CandidateGeneration()
+	EndWhile
+	If before != after
+		Rapport:Core.Trace("chemistry: the candidate list kept moving while it was read - this pass is skipped")
+		count = 0
+	EndIf
+	_held = count
+EndFunction
+
+Int Function ReadCandidates()
 	Int count = Rapport:Core.CandidateCount()
 	If count > iMaxPairs
 		count = iMaxPairs
@@ -515,9 +599,40 @@ Function Snapshot()
 		_playerNear[i] = Rapport:Core.CandidatePlayerNear(i)
 		_distance[i] = Rapport:Core.CandidateDistance(i)
 		_whose[i] = Self.WhosePlace(i, _first[i], _second[i])
+		Self.ReadPartnership(i)
 		i += 1
 	EndWhile
-	_held = count
+	Return count
+EndFunction
+
+; Partnership facts for slot aiIndex, once: couple, straying, and what straying costs.
+Function ReadPartnership(Int aiIndex)
+	_couple[aiIndex] = False
+	_strays[aiIndex] = False
+	_faith[aiIndex] = 0.0
+	Actor a = Game.GetForm(_first[aiIndex]) as Actor
+	Actor b = Game.GetForm(_second[aiIndex]) as Actor
+	If a == None || b == None
+		Return
+	EndIf
+	If Rapport:Relations.ArePartners(a, b)
+		_couple[aiIndex] = True
+		Return
+	EndIf
+	Bool aTaken = Rapport:Relations.HasPartner(a)
+	Bool bTaken = Rapport:Relations.HasPartner(b)
+	_strays[aiIndex] = aTaken || bTaken
+	Float cost = 0.0
+	If aTaken
+		cost -= fFaithWeight * Rapport:Core.FaithfulnessOf(_first[aiIndex])
+	EndIf
+	If bTaken
+		cost -= fFaithWeight * Rapport:Core.FaithfulnessOf(_second[aiIndex])
+	EndIf
+	If fFaithWeight <= 0.0
+		cost = 0.0
+	EndIf
+	_faith[aiIndex] = cost
 EndFunction
 
 ; ---- the table ----------------------------------------------------------------
@@ -535,7 +650,7 @@ Function Table(Int aiCount, Int aiChosenFirst, Int aiChosenSecond)
 		Int secondID = _second[i]
 		If firstID != 0 && secondID != 0
 			Float raw = _score[i]
-			Float hist = Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.PersonaBonus(i, firstID, secondID) + Self.FaithCost(firstID, secondID)
+			Float hist = Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.PersonaBonus(i, firstID, secondID) + _faith[i]
 
 			; Marked by WHO, not by index. The list can be republished between the
 			; decision and this table, and an index would then point at whoever
@@ -777,22 +892,6 @@ Int Function WhosePlace(Int aiIndex, Int aiFirst, Int aiSecond)
 EndFunction
 
 ; From the snapshot, never recomputed.
-; What being partnered to someone ELSE costs this pair (<= 0).
-Float Function FaithCost(Int aiFirst, Int aiSecond)
-	Actor a = Game.GetForm(aiFirst) as Actor
-	Actor b = Game.GetForm(aiSecond) as Actor
-	If a == None || b == None || fFaithWeight <= 0.0 || Rapport:Relations.ArePartners(a, b)
-		Return 0.0
-	EndIf
-	Float cost = 0.0
-	If Rapport:Relations.HasPartner(a)
-		cost -= fFaithWeight * Rapport:Core.FaithfulnessOf(aiFirst)
-	EndIf
-	If Rapport:Relations.HasPartner(b)
-		cost -= fFaithWeight * Rapport:Core.FaithfulnessOf(aiSecond)
-	EndIf
-	Return cost
-EndFunction
 
 ; Chemistry's own share of the score, told to Rapport's Narrator just before the
 ; request, so its numbers line adds up to what decided. Zero parts are skipped there.
@@ -804,11 +903,12 @@ Function ReportToNarrator(Int aiIndex, Int aiFirst, Int aiSecond, Actor akFirst,
 		Rapport:Core.NarrateBonus(aiFirst, aiSecond, "their faction's place", fFactionPlaceBonus)
 	EndIf
 	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "personas", Self.PersonaBonus(aiIndex, aiFirst, aiSecond))
-	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "spoken for", Self.FaithCost(aiFirst, aiSecond))
-	If Rapport:Relations.ArePartners(akFirst, akSecond)
-		; A zero-valued marker: the store only learns they are a couple when the scene
-		; starts, after the Narrator has spoken.
-		Rapport:Core.NarrateBonus(aiFirst, aiSecond, "couple", 0.0)
+	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "spoken for", _faith[aiIndex])
+	; Markers (leading '_'): facts for the Narrator's words, never printed.
+	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "_score", _score[aiIndex])
+	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "_bond", Rapport:Relations.BondBetween(akFirst, akSecond))
+	If _couple[aiIndex]
+		Rapport:Core.NarrateBonus(aiFirst, aiSecond, "_couple", 0.0)
 	EndIf
 EndFunction
 
@@ -817,7 +917,7 @@ String Function MissWhy(Int aiIndex, Int aiFirst, Int aiSecond)
 	If _observers[aiIndex] > iCrowdTolerance
 		Return _observers[aiIndex] + " people are watching"
 	EndIf
-	If Self.FaithCost(aiFirst, aiSecond) < -0.2
+	If _faith[aiIndex] < -0.2
 		Return "one of them is spoken for"
 	EndIf
 	If !_night[aiIndex] && !_interior[aiIndex]

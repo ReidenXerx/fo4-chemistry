@@ -15,18 +15,22 @@
   ASCII only, deliberately -- see deploy-dev.ps1 for why.
 #>
 [CmdletBinding()]
-param([string] $OutDir = '')
+param(
+    [switch] $Force,[string] $OutDir = '')
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 if (-not $OutDir) { $OutDir = Join-Path $root 'build\release' }
 
-$version = '0.1.0'
-$readme = Join-Path $root 'README.md'
-if (Test-Path $readme) {
-    $m = Select-String -Path $readme -Pattern 'version\s+([0-9]+\.[0-9]+\.[0-9]+)' |
-         Select-Object -First 1
-    if ($m) { $version = $m.Matches[0].Groups[1].Value }
+# VERSION is the only place that declares one - read strictly, no fallback. The
+# old way took the first "version x.y.z" in the README, fell back to a typed 0.1.0,
+# and would have taken Rapport's number the day the README said "needs Rapport
+# version 0.2.0".
+$version = (Get-Content (Join-Path $root 'VERSION') -Raw).Trim()
+if ($version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') { throw "VERSION must hold a plain x.y.z, not '$version'" }
+$existing = Join-Path $OutDir "Chemistry-$version.zip"
+if ((Test-Path $existing) -and -not $Force) {
+    throw "Chemistry-$version.zip already exists. Bump VERSION, or pass -Force to rebuild this exact version on purpose."
 }
 
 $stage = Join-Path $OutDir "Chemistry-$version"
