@@ -27,3 +27,18 @@ surfaces and only one that works:
 
 Also: `/edit/description` is a **404** (it lives on `/edit/general`), and the editor hydrates well
 after `networkidle`. `desc-set` refuses to save unless what the editor holds matches the file.
+
+## Publishing to Nexus — read `nexus-tools/docs/TRUST-PIPELINE.md` FIRST
+
+Anything touching a mod page, a release, or the question *"how do I know this is not
+malware"* follows the numbered `T-#` rules there. Three of them exist because the obvious
+move is wrong:
+
+- **`T-3` — the CI hash does NOT match the shipped file.** Measured: same size, 83% of
+  bytes different, because a different MSVC toolset generates different code. Never tell a
+  user to verify their download against a build log until the release actually ships the CI
+  artifact.
+- **`T-4` — a VirusTotal lookup is free; an upload is permanent and public.** Link a scan
+  only at zero detections, and renew it per release: every build has a new hash.
+- **`T-1` — public source is necessary and not sufficient.** Nobody can tell by reading a
+  repo whether the binary on the page came from it.
