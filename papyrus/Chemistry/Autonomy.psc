@@ -51,8 +51,15 @@ Float Property fOwnPlaceBonus = 0.45 AutoReadOnly
 ; Worth something, worth less than their own.
 Float Property fFactionPlaceBonus = 0.20 AutoReadOnly
 
-Float Property fRepeatBonus = 0.15 AutoReadOnly
-Float Property fRepeatCap = 0.45 AutoReadOnly
+; DESIGN C-3, as revised by R-13: history is Rapport's relationship store, not a
+; scene count. The bond (-1..+1) adds to the score one for one, capped both ways.
+; A scene moves the bond 15% of the way to +1, so three scenes together add
+; +0.15, +0.28, +0.39 - the old +0.15-per-scene curve, bent - and the cap is
+; still what keeps two people from owning a settlement. What the engine says two
+; people ARE counts before they have ever met in a scene: a married couple starts
+; at +0.80 and so at the cap, friends at +0.15. Enemies pay the same way down.
+Float Property fBondWeight = 1.0 AutoReadOnly
+Float Property fBondCap = 0.45 AutoReadOnly
 
 ; Backing off an actor AAF keeps refusing, per refusal, in GAME hours, and the cap.
 ;
@@ -159,7 +166,7 @@ Function Connect()
 	Self.CancelTimer(kPollTimer)
 	Self.StartTimer(fPollSeconds, kPollTimer)
 
-	Rapport:Core.Trace("chemistry: awake. every " + Self.F2(fPollSeconds) + "s, bar " + Self.F2(fMinimumScore) + ", rest " + Self.F2(fCooldownHours) + "h, history +" + Self.F2(fRepeatBonus) + " each to a cap of +" + Self.F2(fRepeatCap) + ", log level " + iLogLevel)
+	Rapport:Core.Trace("chemistry: awake. every " + Self.F2(fPollSeconds) + "s, bar " + Self.F2(fMinimumScore) + ", rest " + Self.F2(fCooldownHours) + "h, bond x" + Self.F2(fBondWeight) + " capped at +/-" + Self.F2(fBondCap) + ", log level " + iLogLevel)
 EndFunction
 
 Event OnTimer(Int aiTimerID)
@@ -246,13 +253,13 @@ Function Consider()
 		; Safe for the report: the resting / backed-off / under-bar counters are only
 		; read in the "nobody qualified" branch, which is reached only when there is
 		; no best, in which case this never triggers.
-		If best >= 0 && (_score[i] + fRepeatCap + fOwnPlaceBonus) <= bestScore
+		If best >= 0 && (_score[i] + fBondCap + fOwnPlaceBonus) <= bestScore
 			i = count
 		ElseIf firstID != 0 && secondID != 0
 			If !Self.Available(firstID) || !Self.Available(secondID)
 				backedOff += 1
 			ElseIf Self.Rested(firstID) && Self.Rested(secondID)
-				Float score = _score[i] + Self.RepeatBonus(firstID, secondID) + Self.PlaceBonus(i)
+				Float score = _score[i] + Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i)
 				If score > highest
 					highest = score
 				EndIf
@@ -388,7 +395,7 @@ Function Table(Int aiCount, Int aiChosenFirst, Int aiChosenSecond)
 		Int secondID = _second[i]
 		If firstID != 0 && secondID != 0
 			Float raw = _score[i]
-			Float hist = Self.RepeatBonus(firstID, secondID) + Self.PlaceBonus(i)
+			Float hist = Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i)
 
 			; Marked by WHO, not by index. The list can be republished between the
 			; decision and this table, and an index would then point at whoever
@@ -431,6 +438,7 @@ String Function Verdict(Int aiFirst, Int aiSecond, Float afTotal, Int aiWhose)
 	If met > 0
 		note = note + ", together " + met + " time(s) before"
 	EndIf
+	note = note + ", bond " + Self.F2(Rapport:Relations.BondBetween(Game.GetForm(aiFirst) as Actor, Game.GetForm(aiSecond) as Actor))
 	If aiWhose == 2
 		note = note + ", and one of them lives here"
 	ElseIf aiWhose == 1
@@ -661,14 +669,12 @@ Bool Function Rested(Int aiFormID)
 	Return Rapport:Core.HoursSinceScene(aiFormID) >= fCooldownHours
 EndFunction
 
-Float Function RepeatBonus(Int aiFirst, Int aiSecond)
-	Int met = Rapport:Core.PairSceneCount(aiFirst, aiSecond)
-	If met <= 0
-		Return 0.0
-	EndIf
-	Float bonus = fRepeatBonus * met
-	If bonus > fRepeatCap
-		Return fRepeatCap
+Float Function BondBonus(Int aiFirst, Int aiSecond)
+	Float bonus = fBondWeight * Rapport:Relations.BondBetween(Game.GetForm(aiFirst) as Actor, Game.GetForm(aiSecond) as Actor)
+	If bonus > fBondCap
+		Return fBondCap
+	ElseIf bonus < -fBondCap
+		Return -fBondCap
 	EndIf
 	Return bonus
 EndFunction

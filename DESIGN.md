@@ -51,6 +51,21 @@ This needs `PairSceneCount`, which is a per-pair table in Rapport's co-save.
 memory decays the moment either of them is with somebody else, which is exactly
 when a settlement becomes interesting.
 
+**Revised 2026-09-21 (Rapport R-13, owner poll: "C-3 reads the store").** The scene count is
+retired. The bonus is now Rapport's bond for the pair, one for one, capped at +/-0.45
+(`BondBonus`). A scene moves the bond 15% of the remaining way to +1, so the first three add
++0.15, +0.28 and +0.39: the old curve, flattening sooner. The cap and the rut argument are
+unchanged. Two things are new:
+
+- **The engine's relationship counts before the first scene.** `Rapport:Relations.BondBetween`
+  reads the stored bond once a pair has one, and before that what the engine's rank and
+  marriage WOULD seed, without writing a record. A married couple starts at +0.80, so at the
+  cap. Friends start at +0.15.
+- **Enemies are penalised symmetrically,** down to -0.45.
+
+Blood relatives are NOT refused (Rapport R-14, owner). The store flags them for a later
+attitude layer to judge.
+
 ## C-4 - The player is not a factor (2026-09-19)
 
 Owner's decision. Chemistry never consults `CandidatePlayerNear`, and Rapport's own
