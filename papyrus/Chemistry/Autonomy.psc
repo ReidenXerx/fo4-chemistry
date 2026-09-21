@@ -72,7 +72,15 @@ Float fBondCap = 0.45
 Float fKindredBonus = 0.10    ; same persona
 Float fClashPenalty = 0.10    ; romantic with vulgar
 Float fAudienceBonus = 0.15   ; per vulgar member, in a crowd
-Float fShyPenalty = 0.30      ; per reticent member, in a crowd
+Float fShyPenalty = 0.30
+; Faithfulness (owner, 2026-09-21): each NPC has a persistent random faithfulness,
+; 0..1, derived from the form id by Rapport. Pairing with someone who is NOT their
+; partner costs this much times it, per partnered member - so a devoted spouse
+; almost never strays and a restless one often does. Their own partner is never
+; charged. A pair that strays anyway is recorded as an affair in the store.
+Float fFaithWeight = 0.60
+; A "why nothing happened" line for the Narrator when the best pass came this close.
+Float fNearMissMargin = 0.30      ; per reticent member, in a crowd
 ; The most PersonaBonus can ever add (kindred + two vulgar in a crowd), for the
 ; early exit in Consider: it must never be smaller than the real maximum.
 Float fPersonaMax = 0.40
@@ -188,6 +196,8 @@ Function Defaults()
 	fClashPenalty = 0.10
 	fAudienceBonus = 0.15
 	fShyPenalty = 0.30
+	fFaithWeight = 0.60
+	fNearMissMargin = 0.30
 	fRefusalBackoffHours = 2.0
 	fRefusalBackoffCap = 48.0
 	iLogLevel = 1
@@ -210,6 +220,8 @@ Function LoadSettings()
 		fClashPenalty = MCM.GetModSettingFloat("Chemistry", "fClashPenalty:Personas")
 		fAudienceBonus = MCM.GetModSettingFloat("Chemistry", "fAudienceBonus:Personas")
 		fShyPenalty = MCM.GetModSettingFloat("Chemistry", "fShyPenalty:Personas")
+		fFaithWeight = MCM.GetModSettingFloat("Chemistry", "fFaithWeight:Personas")
+		fNearMissMargin = MCM.GetModSettingFloat("Chemistry", "fNearMissMargin:General")
 		fRefusalBackoffHours = MCM.GetModSettingFloat("Chemistry", "fRefusalBackoffHours:Refusals")
 		fRefusalBackoffCap = MCM.GetModSettingFloat("Chemistry", "fRefusalBackoffCap:Refusals")
 		iLogLevel = MCM.GetModSettingInt("Chemistry", "iLogLevel:General")
@@ -336,6 +348,9 @@ Function Consider()
 	Int backedOff = 0
 	Int tooLow = 0
 	Float highest = -99.0
+	Int missFirst = 0
+	Int missSecond = 0
+	Int missIndex = -1
 
 	Int i = 0
 	While i < count
@@ -358,9 +373,12 @@ Function Consider()
 			If !Self.Available(firstID) || !Self.Available(secondID)
 				backedOff += 1
 			ElseIf Self.Rested(firstID) && Self.Rested(secondID)
-				Float score = _score[i] + Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.PersonaBonus(i, firstID, secondID)
+				Float score = _score[i] + Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.PersonaBonus(i, firstID, secondID) + Self.FaithCost(firstID, secondID)
 				If score > highest
 					highest = score
+					missFirst = firstID
+					missSecond = secondID
+					missIndex = i
 				EndIf
 				If score >= fMinimumScore
 					If score > bestScore
@@ -392,6 +410,11 @@ Function Consider()
 		ElseIf tally
 			Rapport:Core.Trace("chemistry: pass " + _passes + " - passed on all " + count + " pair(s): " + resting + " resting, " + backedOff + " backed off after refusals, " + tooLow + " under the " + Self.F2(fMinimumScore) + " bar" + Self.BestNote(highest) + "." + Self.Tally())
 		EndIf
+		; The Narrator's "why nothing happened": only for a pair that came close, and
+		; Rapport decides whether it is time to say so (it rate-limits).
+		If missIndex >= 0 && highest >= fMinimumScore - fNearMissMargin
+			Rapport:Core.NarrateNearMiss(missFirst, missSecond, Self.MissWhy(missIndex, missFirst, missSecond), highest, fMinimumScore)
+		EndIf
 		Return
 	EndIf
 
@@ -416,7 +439,11 @@ Function Consider()
 	Int quality = Rapport:Core.CanRun(scenario, akFirst, akSecond)
 	Bool took = False
 	If quality >= 0
+		Self.ReportToNarrator(best, bestFirst, bestSecond, akFirst, akSecond)
 		took = Rapport:Core.RequestScene(akFirst, akSecond, scenario)
+		If took && Self.FaithCost(bestFirst, bestSecond) < 0.0
+			Rapport:Core.NoteAffair(bestFirst, bestSecond)
+		EndIf
 		If took
 			_acted += 1
 		EndIf
@@ -508,7 +535,7 @@ Function Table(Int aiCount, Int aiChosenFirst, Int aiChosenSecond)
 		Int secondID = _second[i]
 		If firstID != 0 && secondID != 0
 			Float raw = _score[i]
-			Float hist = Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.PersonaBonus(i, firstID, secondID)
+			Float hist = Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.PersonaBonus(i, firstID, secondID) + Self.FaithCost(firstID, secondID)
 
 			; Marked by WHO, not by index. The list can be republished between the
 			; decision and this table, and an index would then point at whoever
@@ -750,6 +777,55 @@ Int Function WhosePlace(Int aiIndex, Int aiFirst, Int aiSecond)
 EndFunction
 
 ; From the snapshot, never recomputed.
+; What being partnered to someone ELSE costs this pair (<= 0).
+Float Function FaithCost(Int aiFirst, Int aiSecond)
+	Actor a = Game.GetForm(aiFirst) as Actor
+	Actor b = Game.GetForm(aiSecond) as Actor
+	If a == None || b == None || fFaithWeight <= 0.0 || Rapport:Relations.ArePartners(a, b)
+		Return 0.0
+	EndIf
+	Float cost = 0.0
+	If Rapport:Relations.HasPartner(a)
+		cost -= fFaithWeight * Rapport:Core.FaithfulnessOf(aiFirst)
+	EndIf
+	If Rapport:Relations.HasPartner(b)
+		cost -= fFaithWeight * Rapport:Core.FaithfulnessOf(aiSecond)
+	EndIf
+	Return cost
+EndFunction
+
+; Chemistry's own share of the score, told to Rapport's Narrator just before the
+; request, so its numbers line adds up to what decided. Zero parts are skipped there.
+Function ReportToNarrator(Int aiIndex, Int aiFirst, Int aiSecond, Actor akFirst, Actor akSecond)
+	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "bond", Self.BondBonus(aiFirst, aiSecond))
+	If _whose[aiIndex] == 2
+		Rapport:Core.NarrateBonus(aiFirst, aiSecond, "own place", fOwnPlaceBonus)
+	ElseIf _whose[aiIndex] == 1
+		Rapport:Core.NarrateBonus(aiFirst, aiSecond, "their faction's place", fFactionPlaceBonus)
+	EndIf
+	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "personas", Self.PersonaBonus(aiIndex, aiFirst, aiSecond))
+	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "spoken for", Self.FaithCost(aiFirst, aiSecond))
+	If Rapport:Relations.ArePartners(akFirst, akSecond)
+		; A zero-valued marker: the store only learns they are a couple when the scene
+		; starts, after the Narrator has spoken.
+		Rapport:Core.NarrateBonus(aiFirst, aiSecond, "couple", 0.0)
+	EndIf
+EndFunction
+
+; Why the closest pair did not happen, as a clause with no names in it.
+String Function MissWhy(Int aiIndex, Int aiFirst, Int aiSecond)
+	If _observers[aiIndex] > iCrowdTolerance
+		Return _observers[aiIndex] + " people are watching"
+	EndIf
+	If Self.FaithCost(aiFirst, aiSecond) < -0.2
+		Return "one of them is spoken for"
+	EndIf
+	If !_night[aiIndex] && !_interior[aiIndex]
+		Return "it's broad daylight out in the open"
+	EndIf
+	Return "the moment isn't quite right"
+EndFunction
+
 Float Function PlaceBonus(Int aiIndex)
 	Int whose = _whose[aiIndex]
 	If whose == 2

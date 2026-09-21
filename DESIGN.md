@@ -204,3 +204,24 @@ another mod, it is in the wrong repository.
 and no refusal has no timestamp to age against - it can only be collected by being
 empty. So write `need` for actors that matter, not for every candidate you look at,
 and set it to 0.0 when done. Chemistry currently writes none at all.
+
+## C-9 - Faithfulness is a trait, and straying is recorded (owner, 2026-09-22)
+
+The owner's words, answering how much being partnered elsewhere should cost: *"make it random
+persistent value per npc; it will be in future related to 'bad things' if character cheating on
+partner"*.
+
+Rapport derives each NPC's faithfulness (0 to 1) from the form id, the same way it derives personas:
+stable forever, on every machine, and free to save. Chemistry charges `fFaithWeight` (0.60) times it,
+for each member who is married or courting someone who is not in this pair. A partner never pays for
+their own partner. When a pair strays anyway, Chemistry records it as an affair in Rapport's store
+(`NoteAffair`), for the attitude layer to judge.
+
+## C-10 - Chemistry tells the Narrator its share (2026-09-22)
+
+Before every request, Chemistry reports its own parts of the score to Rapport's Narrator: bond, own
+place or faction place, personas, and "spoken for". It also reports a zero-valued "couple" marker,
+because the store only learns two people are married when their first scene starts. When the best
+pair of a pass falls within `fNearMissMargin` of the bar, Chemistry says why it didn't happen, as a
+clause with no names; Rapport rate-limits those lines.
+

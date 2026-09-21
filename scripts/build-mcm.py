@@ -40,6 +40,8 @@ PAGES = [
         ("General", "fCooldownHours", "Rest per person (game hours)", "After a scene, each of the two rests "
          "this long before another.", 0.0, 168.0, 1.0),
         ("General", "fPollSeconds", "Check every (s)", "How often Chemistry looks for a pair.", 5.0, 300.0, 5.0),
+        ("General", "fNearMissMargin", "Near miss within", "How close to the bar a passed-over pair must be "
+         "for the Narrator's 'why nothing happened' line.", 0.0, 2.0, 0.05),
         ("General", "iLogLevel", "Log detail", "0 only actions, 1 the full table when it acts, 2 the table "
          "every pass (Rapport.log).", 0, 2, 1),
         ("section", "Their place"),
@@ -62,6 +64,8 @@ PAGES = [
          "watching.", 0.0, 1.0, 0.05),
         ("Personas", "fShyPenalty", "Reticent shy of crowds", "Penalty per reticent member when a crowd is "
          "watching.", 0.0, 2.0, 0.05),
+        ("Personas", "fFaithWeight", "Faithfulness weight", "Each NPC has a fixed faithfulness from 0 to 1. Pairing "
+         "someone married or courting with anyone else costs this times it. 0 turns it off.", 0.0, 2.0, 0.05),
         ("section", "Refusals"),
         ("Refusals", "fRefusalBackoffHours", "Back off after a refusal (h)", "When AAF refuses someone, wait "
          "this long, doubling with each refusal.", 0.0, 24.0, 0.5),

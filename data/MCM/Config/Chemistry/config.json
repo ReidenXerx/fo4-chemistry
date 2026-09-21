@@ -64,6 +64,18 @@
         },
         {
           "type": "slider",
+          "id": "fNearMissMargin:General",
+          "text": "Near miss within",
+          "help": "How close to the bar a passed-over pair must be for the Narrator's 'why nothing happened' line.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 2.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "slider",
           "id": "iLogLevel:General",
           "text": "Log detail",
           "help": "0 only actions, 1 the full table when it acts, 2 the table every pass (Rapport.log).",
@@ -180,6 +192,18 @@
           "id": "fShyPenalty:Personas",
           "text": "Reticent shy of crowds",
           "help": "Penalty per reticent member when a crowd is watching.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 2.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "slider",
+          "id": "fFaithWeight:Personas",
+          "text": "Faithfulness weight",
+          "help": "Each NPC has a fixed faithfulness from 0 to 1. Pairing someone married or courting with anyone else costs this times it. 0 turns it off.",
           "valueOptions": {
             "min": 0.0,
             "max": 2.0,
