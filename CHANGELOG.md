@@ -2,8 +2,9 @@
 
 ## 0.2.0
 
-**Requires Rapport 0.2.0.** Chemistry checks it on load and stays idle, with one clear log
-line, against an older Rapport.
+**Requires Rapport 0.2.0.** Chemistry checks it on load. Against an older Rapport it stays
+idle, logs one line per load, and leaves Rapport's own trigger alone. Once Rapport is updated,
+the next load brings autonomy back.
 
 - **Relationships decide more.** A pair's bond from Rapport's store adds up to ±0.45, and
   the game's own relationships count before a first scene: a married couple starts close,
@@ -17,6 +18,12 @@ line, against an older Rapport.
 - **Narrated.** With Rapport's Narrator, every scene Chemistry starts says why, including
   Chemistry's own share of the score.
 - **Fixes.**
+  - If MCM is installed but Chemistry's settings are missing, the built-in defaults now apply.
+    Autonomy used to switch itself off silently.
+  - The poll interval can't go below 20 seconds (a setting of 5-15 now reads as 20), because
+    a pass can take seconds.
+  - A pair is never judged from two different candidate lists read half before and half
+    after Rapport refreshed them.
   - After a restart, Rapport's built-in trigger no longer runs alongside Chemistry.
   - A pair can no longer be judged with another pair's crowd count.
 

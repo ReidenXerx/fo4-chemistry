@@ -39,6 +39,8 @@ Int Property kPollTimer = 1 AutoReadOnly
 ; and starts nothing: a pause, not an uninstall.
 Bool bEnabled = True
 Bool _saidNoMcm = False
+; This pass's snapshot was abandoned because the list kept moving (not "empty").
+Bool _torn = False
 Float fPollSeconds = 30.0
 Float fCooldownHours = 24.0
 Float fMinimumScore = 0.90
@@ -170,7 +172,7 @@ Bool[] _playerNear
 Float[] _distance
 ; Computed ONCE per pair in the snapshot, not four times a pass: each asks the engine
 ; for associations, and a pass used to make ~290 of those lookups.
-Float[] _faith       ; FaithCost (<= 0)
+Float[] _faith       ; what straying costs this pair (<= 0), from ReadPartnership
 Bool[] _couple       ; they are each other's partners
 Bool[] _strays       ; a member is partnered to someone ELSE (an affair if it plays)
 Int _held = 0
@@ -281,15 +283,29 @@ EndFunction
 ; A load is a new launch for Rapport's plugin, which forgets the takeover. Re-taken
 ; here at once, not at the next poll: in between, Rapport's own trigger was free to
 ; start a scene with none of Chemistry's rules.
+;
+; And the poll is (re)armed here. A save that met an old Rapport has its timer
+; cancelled (see OnTimer); updating Rapport and loading must bring autonomy back,
+; not leave it switched off on both sides - Chemistry holding the decision with
+; nothing polling, and not one log line saying so.
 Event Actor.OnPlayerLoadGame(Actor akSender)
+	_saidNoMcm = False
 	If Self.RapportIsNewEnough()
 		Rapport:Core.TakeOverDecisions("Chemistry")
+		Self.LoadSettings()
+		Self.CancelTimer(kPollTimer)
+		Self.StartTimer(fPollSeconds, kPollTimer)
+	Else
+		Self.CancelTimer(kPollTimer)
 	EndIf
 EndEvent
 
 Function Connect()
 	Self.RegisterForRemoteEvent(Game.GetPlayer(), "OnPlayerLoadGame")
+	_saidNoMcm = False
 	If !Self.RapportIsNewEnough()
+		; No timer: an old Rapport would cost a Papyrus error every poll. The load
+		; event above arms it once Rapport has been updated.
 		Return
 	EndIf
 	; Said every time rather than once: Rapport's plugin starts fresh on every launch
@@ -334,12 +350,16 @@ Event OnTimer(Int aiTimerID)
 	; none of Chemistry's bonuses. Seen 2026-09-21: the Codmans' scene went out as
 	; "Rapport,autonomy" while Chemistry was polling. One native call; Rapport ignores
 	; a repeat without logging it.
+	; Registered BEFORE the gate: a save upgraded from 0.1.0 has a running timer and
+	; no load event yet, and must get one even while Rapport is too old.
+	Self.RegisterForRemoteEvent(Game.GetPlayer(), "OnPlayerLoadGame")
 	If !Self.RapportIsNewEnough()
+		; Stop polling: one line per load, not an error every 30 seconds. The load
+		; event restarts the timer once Rapport is new enough.
+		Self.CancelTimer(kPollTimer)
 		Return
 	EndIf
 	Rapport:Core.TakeOverDecisions("Chemistry")
-	; Idempotent; registers saves made before this existed.
-	Self.RegisterForRemoteEvent(Game.GetPlayer(), "OnPlayerLoadGame")
 
 	Self.LoadSettings()
 	If !bEnabled
@@ -373,6 +393,9 @@ Function Consider()
 
 	Self.Snapshot()
 	Int count = _held
+	If _torn
+		Return
+	EndIf
 	If count <= 0
 		_blockedEmpty += 1
 		If tally
@@ -574,10 +597,20 @@ Function Snapshot()
 		count = Self.ReadCandidates()
 		after = Rapport:Core.CandidateGeneration()
 	EndWhile
-	If before != after
+	_torn = before != after
+	If _torn
 		Rapport:Core.Trace("chemistry: the candidate list kept moving while it was read - this pass is skipped")
 		count = 0
 	EndIf
+	; The costly part - cells, owners, associations - once, for the final read only,
+	; and outside the window the generation guards: inside it, it stretched the read
+	; to seconds against a 20s republish.
+	Int i = 0
+	While i < count
+		_whose[i] = Self.WhosePlace(i, _first[i], _second[i])
+		Self.ReadPartnership(i)
+		i += 1
+	EndWhile
 	_held = count
 EndFunction
 
@@ -598,8 +631,6 @@ Int Function ReadCandidates()
 		_faction[i] = Rapport:Core.CandidateSharedFaction(i)
 		_playerNear[i] = Rapport:Core.CandidatePlayerNear(i)
 		_distance[i] = Rapport:Core.CandidateDistance(i)
-		_whose[i] = Self.WhosePlace(i, _first[i], _second[i])
-		Self.ReadPartnership(i)
 		i += 1
 	EndWhile
 	Return count
@@ -897,11 +928,18 @@ EndFunction
 ; request, so its numbers line adds up to what decided. Zero parts are skipped there.
 Function ReportToNarrator(Int aiIndex, Int aiFirst, Int aiSecond, Actor akFirst, Actor akSecond)
 	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "bond", Self.BondBonus(aiFirst, aiSecond))
+	; Both labels every time, the one that does not apply as 0: the Narrator replaces a
+	; label it already holds, so a label merely NOT sent would linger from a declined
+	; request and be counted twice.
+	Float ownPart = 0.0
+	Float factionPart = 0.0
 	If _whose[aiIndex] == 2
-		Rapport:Core.NarrateBonus(aiFirst, aiSecond, "own place", fOwnPlaceBonus)
+		ownPart = fOwnPlaceBonus
 	ElseIf _whose[aiIndex] == 1
-		Rapport:Core.NarrateBonus(aiFirst, aiSecond, "their faction's place", fFactionPlaceBonus)
+		factionPart = fFactionPlaceBonus
 	EndIf
+	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "own place", ownPart)
+	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "their faction's place", factionPart)
 	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "personas", Self.PersonaBonus(aiIndex, aiFirst, aiSecond))
 	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "spoken for", _faith[aiIndex])
 	; Markers (leading '_'): facts for the Narrator's words, never printed.
