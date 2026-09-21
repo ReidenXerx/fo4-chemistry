@@ -4,14 +4,14 @@
   "message": "1.2k lines",
   "color": "informational",
   "_breakdown": {
-    "Papyrus": 653,
+    "Papyrus": 674,
     "Python": 275,
     "PowerShell": 120,
     "JavaScript": 105
   },
   "_files": 8,
   "_top": [
-    "653 Papyrus",
+    "674 Papyrus",
     "275 Python"
   ]
 }
