@@ -29,13 +29,18 @@ Int Property kPollTimer = 1 AutoReadOnly
 
 ; ---- the tunables -------------------------------------------------------------
 ;
-; Numbers, not decisions. The decisions they implement are in DESIGN.md as C-1 to
-; C-5; these are the first guesses at what they should be worth. They live here
-; rather than in an ini because Chemistry has no native code to read one.
+; Numbers, not decisions. The decisions they implement are in DESIGN.md. Each is a
+; player setting in MCM since 2026-09-21: LoadSettings reads them every poll, and
+; its Defaults() is THE list of default values - scripts/build-mcm.py generates the
+; MCM defaults from it, so the menu and the script cannot disagree. The values on
+; the declarations below only matter for the moment before the first poll.
 
-Float Property fPollSeconds = 30.0 AutoReadOnly
-Float Property fCooldownHours = 24.0 AutoReadOnly
-Float Property fMinimumScore = 0.90 AutoReadOnly
+; Off = Chemistry keeps the decision (so Rapport's stand-in does not take it back)
+; and starts nothing: a pause, not an uninstall.
+Bool bEnabled = True
+Float fPollSeconds = 30.0
+Float fCooldownHours = 24.0
+Float fMinimumScore = 0.90
 ; Somewhere that belongs to them. Added ON TOP of Rapport's indoor bonus rather
 ; than replacing it: the indoor weight lives in Rapport's scoring.json, and
 ; subtracting it from here would hardcode a second copy of somebody else's config.
@@ -45,11 +50,11 @@ Float Property fMinimumScore = 0.90 AutoReadOnly
 ; Rapport cannot measure this. Its scoring is C++ and CommonLibF4 leaves
 ; TESObjectCELL forward-declared, so cell ownership is only reachable from Papyrus,
 ; which is here.
-Float Property fOwnPlaceBonus = 0.45 AutoReadOnly
+Float fOwnPlaceBonus = 0.45
 
 ; Their faction's place -- a settlement's shared building rather than a bedroom.
 ; Worth something, worth less than their own.
-Float Property fFactionPlaceBonus = 0.20 AutoReadOnly
+Float fFactionPlaceBonus = 0.20
 
 ; DESIGN C-3, as revised by R-13: history is Rapport's relationship store, not a
 ; scene count. The bond (-1..+1) adds to the score one for one, capped both ways.
@@ -58,19 +63,19 @@ Float Property fFactionPlaceBonus = 0.20 AutoReadOnly
 ; still what keeps two people from owning a settlement. What the engine says two
 ; people ARE counts before they have ever met in a scene: a married couple starts
 ; at +0.80 and so at the cap, friends at +0.15. Enemies pay the same way down.
-Float Property fBondWeight = 1.0 AutoReadOnly
-Float Property fBondCap = 0.45 AutoReadOnly
+Float fBondWeight = 1.0
+Float fBondCap = 0.45
 
 ; DESIGN C-8 (owner poll 2026-09-21): personas steer pairing. Each NPC's persona is
 ; Rapport's (derived from the form id, or pinned in personas.json). Mercantile adds
 ; nothing here - it is flavour, and it lives in the barks.
-Float Property fKindredBonus = 0.10 AutoReadOnly    ; same persona
-Float Property fClashPenalty = 0.10 AutoReadOnly    ; romantic with vulgar
-Float Property fAudienceBonus = 0.15 AutoReadOnly   ; per vulgar member, in a crowd
-Float Property fShyPenalty = 0.30 AutoReadOnly      ; per reticent member, in a crowd
+Float fKindredBonus = 0.10    ; same persona
+Float fClashPenalty = 0.10    ; romantic with vulgar
+Float fAudienceBonus = 0.15   ; per vulgar member, in a crowd
+Float fShyPenalty = 0.30      ; per reticent member, in a crowd
 ; The most PersonaBonus can ever add (kindred + two vulgar in a crowd), for the
 ; early exit in Consider: it must never be smaller than the real maximum.
-Float Property fPersonaMax = 0.40 AutoReadOnly
+Float fPersonaMax = 0.40
 
 ; Backing off an actor AAF keeps refusing, per refusal, in GAME hours, and the cap.
 ;
@@ -90,10 +95,12 @@ Float Property fPersonaMax = 0.40 AutoReadOnly
 ; Rapport's observerTolerance in scoring.json, which forgives the first two entirely
 ; -- if these two disagree then one layer calls a pair private while the other calls
 ; it a crowd, which is exactly the contradiction the first version shipped with.
-Int Property iCrowdTolerance = 2 AutoReadOnly
+; Now READ from Rapport (ObserverTolerance) every poll instead of kept here: one
+; number, so the two can no longer disagree. Set it in Rapport's MCM page.
+Int iCrowdTolerance = 2
 
-Float Property fRefusalBackoffHours = 2.0 AutoReadOnly
-Float Property fRefusalBackoffCap = 48.0 AutoReadOnly
+Float fRefusalBackoffHours = 2.0
+Float fRefusalBackoffCap = 48.0
 
 ; ---- how much it says ---------------------------------------------------------
 ;
@@ -110,7 +117,7 @@ Float Property fRefusalBackoffCap = 48.0 AutoReadOnly
 ; from a list that has moved on.
 Int Property iMaxPairs = 24 AutoReadOnly
 
-Int Property iLogLevel = 1 AutoReadOnly
+Int iLogLevel = 1
 Int Property iTallyEvery = 10 AutoReadOnly
 
 ; ---- state, in the save -------------------------------------------------------
@@ -142,6 +149,16 @@ Float[] _score
 ; twice is both wasteful and a way for the two to disagree if an actor moves between
 ; them -- which is the bug this snapshot exists to prevent.
 Int[] _whose
+; Everything else Chemistry reads about a pair, taken in the SAME snapshot as its
+; ids. Reading these by index from Rapport later was a race: Rapport republishes
+; every 20s, and 2026-09-21 the Codmans' line said "17 watching" - slot 0 of the
+; NEXT list, a Drifter pair in another cell - while Rapport had counted 6.
+Int[] _observers
+Bool[] _interior
+Bool[] _night
+Bool[] _faction
+Bool[] _playerNear
+Float[] _distance
 Int _held = 0
 
 ; ---- lifecycle ----------------------------------------------------------------
@@ -153,6 +170,64 @@ EndEvent
 Event OnInit()
 	Self.Connect()
 EndEvent
+
+; ---- settings -----------------------------------------------------------------
+
+; THE default values. scripts/build-mcm.py reads the assignments below to write the
+; MCM defaults, so change a default HERE and re-run it.
+Function Defaults()
+	bEnabled = True
+	fPollSeconds = 30.0
+	fCooldownHours = 24.0
+	fMinimumScore = 0.90
+	fOwnPlaceBonus = 0.45
+	fFactionPlaceBonus = 0.20
+	fBondWeight = 1.0
+	fBondCap = 0.45
+	fKindredBonus = 0.10
+	fClashPenalty = 0.10
+	fAudienceBonus = 0.15
+	fShyPenalty = 0.30
+	fRefusalBackoffHours = 2.0
+	fRefusalBackoffCap = 48.0
+	iLogLevel = 1
+EndFunction
+
+; Every poll: about fifteen native calls, and a slider takes effect on the next
+; poll with no event to register for. Without MCM, the defaults above.
+Function LoadSettings()
+	Self.Defaults()
+	If MCM.IsInstalled()
+		bEnabled = MCM.GetModSettingBool("Chemistry", "bEnabled:General")
+		fPollSeconds = Self.AtLeast(MCM.GetModSettingFloat("Chemistry", "fPollSeconds:General"), 5.0)
+		fCooldownHours = MCM.GetModSettingFloat("Chemistry", "fCooldownHours:General")
+		fMinimumScore = MCM.GetModSettingFloat("Chemistry", "fMinimumScore:General")
+		fOwnPlaceBonus = MCM.GetModSettingFloat("Chemistry", "fOwnPlaceBonus:Place")
+		fFactionPlaceBonus = MCM.GetModSettingFloat("Chemistry", "fFactionPlaceBonus:Place")
+		fBondWeight = MCM.GetModSettingFloat("Chemistry", "fBondWeight:Bond")
+		fBondCap = MCM.GetModSettingFloat("Chemistry", "fBondCap:Bond")
+		fKindredBonus = MCM.GetModSettingFloat("Chemistry", "fKindredBonus:Personas")
+		fClashPenalty = MCM.GetModSettingFloat("Chemistry", "fClashPenalty:Personas")
+		fAudienceBonus = MCM.GetModSettingFloat("Chemistry", "fAudienceBonus:Personas")
+		fShyPenalty = MCM.GetModSettingFloat("Chemistry", "fShyPenalty:Personas")
+		fRefusalBackoffHours = MCM.GetModSettingFloat("Chemistry", "fRefusalBackoffHours:Refusals")
+		fRefusalBackoffCap = MCM.GetModSettingFloat("Chemistry", "fRefusalBackoffCap:Refusals")
+		iLogLevel = MCM.GetModSettingInt("Chemistry", "iLogLevel:General")
+	EndIf
+	; Derived, never a setting: the early exit in Consider must be at least the most
+	; the persona rules can add (kindred + two vulgar in a crowd), or it skips a pair
+	; they would have lifted over the best.
+	fPersonaMax = Self.AtLeast(fKindredBonus, 0.0) + 2.0 * Self.AtLeast(fAudienceBonus, 0.0)
+	; One number for "how many onlookers are still privacy" (C-6), and it is Rapport's.
+	iCrowdTolerance = Rapport:Core.ObserverTolerance()
+EndFunction
+
+Float Function AtLeast(Float afValue, Float afFloor)
+	If afValue < afFloor
+		Return afFloor
+	EndIf
+	Return afValue
+EndFunction
 
 Function Connect()
 	; Said every time rather than once: Rapport's plugin starts fresh on every launch
@@ -174,6 +249,7 @@ Function Connect()
 	; and Papyrus cannot be asked whether a timer is already running -- Rapport's
 	; bridge started three overlapping polls that way. A remembered flag is the thing
 	; that has wedged that mod twice, so no flag: just cancel.
+	Self.LoadSettings()
 	Self.CancelTimer(kPollTimer)
 	Self.StartTimer(fPollSeconds, kPollTimer)
 
@@ -190,6 +266,18 @@ Event OnTimer(Int aiTimerID)
 	; nothing for the rest of the save.
 	Self.StartTimer(fPollSeconds, kPollTimer)
 
+	; Every poll, not only in Connect. OnInit runs once per SAVE, but Rapport's plugin
+	; forgets the takeover on every LAUNCH - so after a restart and a load, Rapport's
+	; stand-in went on choosing scenes beside Chemistry, with its own cooldown and
+	; none of Chemistry's bonuses. Seen 2026-09-21: the Codmans' scene went out as
+	; "Rapport,autonomy" while Chemistry was polling. One native call; Rapport ignores
+	; a repeat without logging it.
+	Rapport:Core.TakeOverDecisions("Chemistry")
+
+	Self.LoadSettings()
+	If !bEnabled
+		Return
+	EndIf
 	Self.Consider()
 EndEvent
 
@@ -368,11 +456,19 @@ Function Snapshot()
 	; A literal 24, because Fallout 4 ships no Utility.psc and there is no
 	; CreateIntArray to size one from a variable. iMaxPairs must match it, and is
 	; what everything else reads -- they are two halves of one number.
-	If _first.Length != iMaxPairs
+	; !_observers too: a save from before those arrays existed has a 24-slot _first
+	; and no _observers at all.
+	If _first.Length != iMaxPairs || !_observers
 		_first = new Int[24]
 		_second = new Int[24]
 		_score = new Float[24]
 		_whose = new Int[24]
+		_observers = new Int[24]
+		_interior = new Bool[24]
+		_night = new Bool[24]
+		_faction = new Bool[24]
+		_playerNear = new Bool[24]
+		_distance = new Float[24]
 	EndIf
 
 	Int count = Rapport:Core.CandidateCount()
@@ -385,6 +481,12 @@ Function Snapshot()
 		_first[i] = Rapport:Core.CandidateFirst(i)
 		_second[i] = Rapport:Core.CandidateSecond(i)
 		_score[i] = Rapport:Core.CandidateScore(i)
+		_observers[i] = Rapport:Core.CandidateObservers(i)
+		_interior[i] = Rapport:Core.CandidateInterior(i)
+		_night[i] = Rapport:Core.CandidateNight(i)
+		_faction[i] = Rapport:Core.CandidateSharedFaction(i)
+		_playerNear[i] = Rapport:Core.CandidatePlayerNear(i)
+		_distance[i] = Rapport:Core.CandidateDistance(i)
 		_whose[i] = Self.WhosePlace(i, _first[i], _second[i])
 		i += 1
 	EndWhile
@@ -463,11 +565,11 @@ EndFunction
 
 String Function Where(Int aiIndex)
 	String out = "outdoors"
-	If Rapport:Core.CandidateInterior(aiIndex)
+	If _interior[aiIndex]
 		out = "indoors"
 	EndIf
 
-	Int watching = Rapport:Core.CandidateObservers(aiIndex)
+	Int watching = _observers[aiIndex]
 	If watching == 0
 		out = out + ", nobody watching"
 	ElseIf watching == 1
@@ -476,22 +578,22 @@ String Function Where(Int aiIndex)
 		out = out + ", " + watching + " watching"
 	EndIf
 
-	If Rapport:Core.CandidateNight(aiIndex)
+	If _night[aiIndex]
 		out = out + ", night"
 	Else
 		out = out + ", daytime"
 	EndIf
 
-	out = out + ", " + Self.F2(Rapport:Core.CandidateDistance(aiIndex)) + " units apart"
+	out = out + ", " + Self.F2(_distance[aiIndex]) + " units apart"
 
-	If Rapport:Core.CandidateSharedFaction(aiIndex)
+	If _faction[aiIndex]
 		out = out + ", same faction"
 	EndIf
 
 	; Reported, never acted on. The player is not a factor by decision (DESIGN C-4),
 	; and the difference between "ignored" and "never measured" is worth being able to
 	; see in the log.
-	If Rapport:Core.CandidatePlayerNear(aiIndex)
+	If _playerNear[aiIndex]
 		out = out + ", player nearby (ignored by policy)"
 	EndIf
 	Return out
@@ -505,10 +607,10 @@ String Function WhyScenario(Int aiIndex)
 	If whose == 1
 		Return "their faction's building - not private, but not a street either"
 	EndIf
-	If Rapport:Core.CandidateInterior(aiIndex) && Rapport:Core.CandidateObservers(aiIndex) <= iCrowdTolerance
+	If _interior[aiIndex] && _observers[aiIndex] <= iCrowdTolerance
 		Return "indoors and nobody who counts as a crowd, so there is time to take"
 	EndIf
-	If Rapport:Core.CandidateObservers(aiIndex) <= iCrowdTolerance
+	If _observers[aiIndex] <= iCrowdTolerance
 		If Self.EitherIs(aiIndex, "vulgar")
 			Return "out in the open, and one of them is vulgar: no taking it slow"
 		EndIf
@@ -620,7 +722,7 @@ EndFunction
 ; asking would cost two native calls for every actor in every pair on every pass --
 ; up to forty-eight of them -- to learn nothing.
 Int Function WhosePlace(Int aiIndex, Int aiFirst, Int aiSecond)
-	If !Rapport:Core.CandidateInterior(aiIndex)
+	If !_interior[aiIndex]
 		Return 0
 	EndIf
 
@@ -704,7 +806,7 @@ Float Function PersonaBonus(Int aiIndex, Int aiFirst, Int aiSecond)
 	ElseIf (a == "romantic" && b == "vulgar") || (a == "vulgar" && b == "romantic")
 		bonus -= fClashPenalty
 	EndIf
-	If Rapport:Core.CandidateObservers(aiIndex) > iCrowdTolerance
+	If _observers[aiIndex] > iCrowdTolerance
 		If a == "vulgar"
 			bonus += fAudienceBonus
 		ElseIf a == "reticent"
@@ -745,10 +847,10 @@ String Function ScenarioFor(Int aiIndex)
 	If whose == 2
 		Return "athome"
 	EndIf
-	If Rapport:Core.CandidateInterior(aiIndex) && Rapport:Core.CandidateObservers(aiIndex) <= iCrowdTolerance
+	If _interior[aiIndex] && _observers[aiIndex] <= iCrowdTolerance
 		Return "athome"
 	EndIf
-	If Rapport:Core.CandidateObservers(aiIndex) <= iCrowdTolerance
+	If _observers[aiIndex] <= iCrowdTolerance
 		; C-8: in the open, a vulgar one does not take it slow.
 		If Self.EitherIs(aiIndex, "vulgar")
 			Return "quickie"

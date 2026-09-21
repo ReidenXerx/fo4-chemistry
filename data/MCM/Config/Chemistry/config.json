@@ -1,0 +1,221 @@
+{
+  "modName": "Chemistry",
+  "displayName": "Chemistry",
+  "minMcmVersion": 1,
+  "pluginRequirements": [
+    "Chemistry.esp"
+  ],
+  "pages": [
+    {
+      "pageDisplayName": "Autonomy",
+      "content": [
+        {
+          "type": "text",
+          "text": "Chemistry decides who pairs up and which scene plays, on top of Rapport's score. Crowd tolerance is on Rapport's page: both mods use that one number."
+        },
+        {
+          "type": "section",
+          "text": "General"
+        },
+        {
+          "type": "switcher",
+          "id": "bEnabled:General",
+          "text": "Autonomous scenes",
+          "help": "Off pauses Chemistry: nothing starts on its own, and Rapport's built-in trigger stays off too.",
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
+          "type": "slider",
+          "id": "fMinimumScore:General",
+          "text": "Score needed",
+          "help": "The total a pair must reach (Rapport's score plus Chemistry's bonuses). Lower means more scenes.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 5.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "slider",
+          "id": "fCooldownHours:General",
+          "text": "Rest per person (game hours)",
+          "help": "After a scene, each of the two rests this long before another.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 168.0,
+            "step": 1.0,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "slider",
+          "id": "fPollSeconds:General",
+          "text": "Check every (s)",
+          "help": "How often Chemistry looks for a pair.",
+          "valueOptions": {
+            "min": 5.0,
+            "max": 300.0,
+            "step": 5.0,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "slider",
+          "id": "iLogLevel:General",
+          "text": "Log detail",
+          "help": "0 only actions, 1 the full table when it acts, 2 the table every pass (Rapport.log).",
+          "valueOptions": {
+            "min": 0,
+            "max": 2,
+            "step": 1,
+            "sourceType": "ModSettingInt"
+          }
+        },
+        {
+          "type": "section",
+          "text": "Their place"
+        },
+        {
+          "type": "slider",
+          "id": "fOwnPlaceBonus:Place",
+          "text": "Their own home",
+          "help": "Bonus when one of them lives here.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 2.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "slider",
+          "id": "fFactionPlaceBonus:Place",
+          "text": "Their faction's place",
+          "help": "Bonus in a building their faction owns.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 2.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        }
+      ]
+    },
+    {
+      "pageDisplayName": "Relationships",
+      "content": [
+        {
+          "type": "section",
+          "text": "Bond"
+        },
+        {
+          "type": "slider",
+          "id": "fBondWeight:Bond",
+          "text": "Bond weight",
+          "help": "How much a pair's bond (-1 to +1, Rapport's relationship store) adds to the score.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 3.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "slider",
+          "id": "fBondCap:Bond",
+          "text": "Bond cap",
+          "help": "The most the bond can add or take away. Keeps one couple from owning a settlement.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 2.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "section",
+          "text": "Personas"
+        },
+        {
+          "type": "slider",
+          "id": "fKindredBonus:Personas",
+          "text": "Same persona",
+          "help": "Bonus when both have the same persona.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "slider",
+          "id": "fClashPenalty:Personas",
+          "text": "Romantic with vulgar",
+          "help": "Penalty for a romantic and a vulgar pair.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "slider",
+          "id": "fAudienceBonus:Personas",
+          "text": "Vulgar likes an audience",
+          "help": "Bonus per vulgar member when a crowd is watching.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "slider",
+          "id": "fShyPenalty:Personas",
+          "text": "Reticent shy of crowds",
+          "help": "Penalty per reticent member when a crowd is watching.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 2.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "section",
+          "text": "Refusals"
+        },
+        {
+          "type": "slider",
+          "id": "fRefusalBackoffHours:Refusals",
+          "text": "Back off after a refusal (h)",
+          "help": "When AAF refuses someone, wait this long, doubling with each refusal.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 24.0,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "slider",
+          "id": "fRefusalBackoffCap:Refusals",
+          "text": "Longest back-off (h)",
+          "help": "The doubling stops here.",
+          "valueOptions": {
+            "min": 1.0,
+            "max": 168.0,
+            "step": 1.0,
+            "sourceType": "ModSettingFloat"
+          }
+        }
+      ]
+    }
+  ]
+}
