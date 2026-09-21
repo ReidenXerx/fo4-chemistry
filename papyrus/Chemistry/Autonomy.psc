@@ -61,6 +61,17 @@ Float Property fFactionPlaceBonus = 0.20 AutoReadOnly
 Float Property fBondWeight = 1.0 AutoReadOnly
 Float Property fBondCap = 0.45 AutoReadOnly
 
+; DESIGN C-8 (owner poll 2026-09-21): personas steer pairing. Each NPC's persona is
+; Rapport's (derived from the form id, or pinned in personas.json). Mercantile adds
+; nothing here - it is flavour, and it lives in the barks.
+Float Property fKindredBonus = 0.10 AutoReadOnly    ; same persona
+Float Property fClashPenalty = 0.10 AutoReadOnly    ; romantic with vulgar
+Float Property fAudienceBonus = 0.15 AutoReadOnly   ; per vulgar member, in a crowd
+Float Property fShyPenalty = 0.30 AutoReadOnly      ; per reticent member, in a crowd
+; The most PersonaBonus can ever add (kindred + two vulgar in a crowd), for the
+; early exit in Consider: it must never be smaller than the real maximum.
+Float Property fPersonaMax = 0.40 AutoReadOnly
+
 ; Backing off an actor AAF keeps refusing, per refusal, in GAME hours, and the cap.
 ;
 ; Not a nicety. AAF silently refuses an actor carrying its busy keywords, and a
@@ -253,13 +264,13 @@ Function Consider()
 		; Safe for the report: the resting / backed-off / under-bar counters are only
 		; read in the "nobody qualified" branch, which is reached only when there is
 		; no best, in which case this never triggers.
-		If best >= 0 && (_score[i] + fBondCap + fOwnPlaceBonus) <= bestScore
+		If best >= 0 && (_score[i] + fBondCap + fOwnPlaceBonus + fPersonaMax) <= bestScore
 			i = count
 		ElseIf firstID != 0 && secondID != 0
 			If !Self.Available(firstID) || !Self.Available(secondID)
 				backedOff += 1
 			ElseIf Self.Rested(firstID) && Self.Rested(secondID)
-				Float score = _score[i] + Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i)
+				Float score = _score[i] + Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.PersonaBonus(i, firstID, secondID)
 				If score > highest
 					highest = score
 				EndIf
@@ -387,7 +398,7 @@ EndFunction
 ; bar" without saying by how much, is the kind of line that looks like an explanation
 ; and is not one.
 Function Table(Int aiCount, Int aiChosenFirst, Int aiChosenSecond)
-	Rapport:Core.Trace("chemistry: pass " + _passes + " | " + aiCount + " pair(s) published | score + bonus = total | verdict  (bonus = shared history and whose place it is)")
+	Rapport:Core.Trace("chemistry: pass " + _passes + " | " + aiCount + " pair(s) published | score + bonus = total | verdict  (bonus = bond, whose place it is, and personas)")
 
 	Int i = 0
 	While i < aiCount
@@ -395,7 +406,7 @@ Function Table(Int aiCount, Int aiChosenFirst, Int aiChosenSecond)
 		Int secondID = _second[i]
 		If firstID != 0 && secondID != 0
 			Float raw = _score[i]
-			Float hist = Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i)
+			Float hist = Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.PersonaBonus(i, firstID, secondID)
 
 			; Marked by WHO, not by index. The list can be republished between the
 			; decision and this table, and an index would then point at whoever
@@ -438,6 +449,7 @@ String Function Verdict(Int aiFirst, Int aiSecond, Float afTotal, Int aiWhose)
 	If met > 0
 		note = note + ", together " + met + " time(s) before"
 	EndIf
+	note = note + ", personas " + Rapport:Core.PersonaOf(aiFirst) + "/" + Rapport:Core.PersonaOf(aiSecond)
 	note = note + ", bond " + Self.F2(Rapport:Relations.BondBetween(Game.GetForm(aiFirst) as Actor, Game.GetForm(aiSecond) as Actor))
 	If aiWhose == 2
 		note = note + ", and one of them lives here"
@@ -497,6 +509,9 @@ String Function WhyScenario(Int aiIndex)
 		Return "indoors and nobody who counts as a crowd, so there is time to take"
 	EndIf
 	If Rapport:Core.CandidateObservers(aiIndex) <= iCrowdTolerance
+		If Self.EitherIs(aiIndex, "vulgar")
+			Return "out in the open, and one of them is vulgar: no taking it slow"
+		EndIf
 		Return "out in the open but not crowded: unhurried, not private"
 	EndIf
 	Return "more than " + iCrowdTolerance + " watching, so too busy for anything long"
@@ -679,6 +694,35 @@ Float Function BondBonus(Int aiFirst, Int aiSecond)
 	Return bonus
 EndFunction
 
+; DESIGN C-8. What their personas make of each other, and of an audience.
+Float Function PersonaBonus(Int aiIndex, Int aiFirst, Int aiSecond)
+	String a = Rapport:Core.PersonaOf(aiFirst)
+	String b = Rapport:Core.PersonaOf(aiSecond)
+	Float bonus = 0.0
+	If a != "" && a == b
+		bonus += fKindredBonus
+	ElseIf (a == "romantic" && b == "vulgar") || (a == "vulgar" && b == "romantic")
+		bonus -= fClashPenalty
+	EndIf
+	If Rapport:Core.CandidateObservers(aiIndex) > iCrowdTolerance
+		If a == "vulgar"
+			bonus += fAudienceBonus
+		ElseIf a == "reticent"
+			bonus -= fShyPenalty
+		EndIf
+		If b == "vulgar"
+			bonus += fAudienceBonus
+		ElseIf b == "reticent"
+			bonus -= fShyPenalty
+		EndIf
+	EndIf
+	Return bonus
+EndFunction
+
+Bool Function EitherIs(Int aiIndex, String asPersona)
+	Return Rapport:Core.PersonaOf(_first[aiIndex]) == asPersona || Rapport:Core.PersonaOf(_second[aiIndex]) == asPersona
+EndFunction
+
 ; DESIGN C-6. Privacy buys time, and the line between private and public is the same
 ; number Rapport already uses.
 ;
@@ -705,6 +749,10 @@ String Function ScenarioFor(Int aiIndex)
 		Return "athome"
 	EndIf
 	If Rapport:Core.CandidateObservers(aiIndex) <= iCrowdTolerance
+		; C-8: in the open, a vulgar one does not take it slow.
+		If Self.EitherIs(aiIndex, "vulgar")
+			Return "quickie"
+		EndIf
 		Return "tender"
 	EndIf
 	Return "quickie"

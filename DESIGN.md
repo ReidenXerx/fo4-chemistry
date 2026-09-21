@@ -129,6 +129,27 @@ for good. It uses both of Rapport's facts -- `RefusalCount` and `HoursSinceRefus
 because either alone is wrong. The count with no recency avoids somebody forever over
 one bad afternoon; recency alone cannot tell bad luck from a permanent flag.
 
+
+## C-8 - personas steer pairing and the story (owner poll, 2026-09-21)
+
+Rapport R-13 says personas drive Chemistry. The owner chose "scenario + pairing" and approved
+these rules as proposed. Each NPC's persona is Rapport's: derived from the form id, or pinned in
+`personas.json` (Ivy is pinned vulgar).
+
+| Pairing (added to the score; the bar is 0.90) | |
+| --- | --- |
+| same persona | +0.10, kindred spirits |
+| romantic with vulgar | -0.10, they clash |
+| crowd (more than `iCrowdTolerance` watching), per vulgar member | +0.15, likes an audience |
+| crowd, per reticent member | -0.30, shy of crowds |
+| mercantile | nothing; its flavour is in the barks |
+
+Scenario: C-6's place rule stays the base. The one change: out in the open and uncrowded, where
+C-6 says `tender`, a pair with a vulgar member gets `quickie`. Their own place, a private room
+and a crowd are unchanged.
+
+Bond (C-3) and place bonuses are unchanged. `fPersonaMax` (0.40) bounds the early exit in
+`Consider`, so it has to stay at least the largest total the rules above can reach.
 ## C-8 - whose place is it (2026-09-20)
 
 Owner: knowing WHICH indoors is the immersive lever. It is, and only one form of it
