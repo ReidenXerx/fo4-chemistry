@@ -226,8 +226,10 @@ their own partner. When a pair strays anyway, Chemistry records it as an affair 
 
 **Amended by the owner, 2026-09-23 (Overture O-15):** "partnered elsewhere" includes being the
 player's lover (Rapport's lovers flag, AreLovers(npc, player), set by Overture at a bond of 0.75
-and a scene), behind an MCM switch. A scene anyway is an affair against the player. Built; not yet
-run in game.
+and a scene), behind an MCM switch. A scene anyway is recorded as an affair: Rapport's affair flag
+on the lover and the other, which is what C-9 records for any partnered NPC. Nothing is written about
+the player yet; whether the player should learn of it is the owner's question. Built; not yet run in
+game.
 
 ## C-10 - Chemistry tells the Narrator its share (2026-09-22)
 

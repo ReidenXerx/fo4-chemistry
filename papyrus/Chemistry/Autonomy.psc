@@ -85,7 +85,9 @@ Float fFaithWeight = 0.60
 ; C-4/C-9 as amended by the owner, 2026-09-23 (Overture O-15): the player's LOVER is
 ; spoken for too. Someone Rapport's store says is the PLAYER's lover (Overture
 ; declares it at a bond of 0.75 and a scene together, O-27) pays the faithfulness
-; cost with anyone else, and straying is recorded as an affair against the player.
+; cost with anyone else, and a scene anyway is recorded as an affair -- Rapport's
+; affair flag on the two who had it, the lover and the other; nothing is written
+; about the player yet.
 ; Only the player's: lovers other addons declare between two NPCs are nothing this
 ; switch was asked about. A switch, as the owner asked. Rapport 0.2.1 (API 201)
 ; knows lovers; an older one simply has none.
