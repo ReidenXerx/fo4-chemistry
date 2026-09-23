@@ -20,6 +20,8 @@ either asks for one scene or explains in the log why it asked for none.
 | **A crowd is prohibitive; two onlookers are nothing** | The same tolerance Rapport already uses, deliberately the same number, because one layer calling a pair private while the other calls it crowded is the contradiction this shipped with once. |
 | **It stops asking the NPC who always says no** | An escalating backoff on refusals. AAF leaves a busy flag on an NPC for the rest of the save if a request dies badly, and one such NPC scores top of the list and burns a request every time. |
 | **Bond and persona** | A pair's bond in Rapport's relationship store counts, married couples before their first scene too. Personas bend who pairs and which story plays (C-8). |
+| **Your lover is spoken for** | Someone who is your lover through Overture pays the same faithfulness cost as a married NPC with anyone else, and straying is recorded as an affair. A switch in MCM (with Rapport 0.2.1). |
+| **Your own scene comes first** | While Rapport holds its one scene slot for a scene you asked for, Chemistry waits (with Rapport 0.2.1). |
 | **A log you can reconstruct any decision from** | Nothing about this mod is visible on screen: a settlement where nothing happens looks exactly like a settlement where the logic is broken. |
 
 `DESIGN.md` has the reasoning, `C-1` to `C-8`. `docs/FEATURES.md` is the audit, including what is

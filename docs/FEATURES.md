@@ -55,6 +55,12 @@ judge them. Once it is called, enforcing a cooldown is Chemistry's job (`C-1`).
 bridge learned this the hard way: its poll ran 17 times and stopped at the exact poll that called
 `StartTimer` with a second id. Both places using a second id aborted at that statement.
 
+**Corrected 2026-09-23:** Rapport's own later runs put that failure on an AAF call that never
+returns, not on the second id (its `docs/two-lifetimes.md`: run 2 removed every `StartTimer` and
+failed the same way). `OnTimer` runs one at a time per script, so one stuck handler starves every
+timer on it. Chemistry calls no AAF function at all, so the rule it inherits is really "never stall
+a timer's stack"; one timer stays, as a simplicity.
+
 ### Checks `Busy()` before it reasons — VERIFIED IN GAME
 
 **What.** If a scene of ours is already running, the pass ends immediately.
@@ -62,6 +68,16 @@ bridge learned this the hard way: its poll ran 17 times and stopped at the exact
 **Why.** `RequestScene` declines while busy anyway — but by then Chemistry has read every candidate,
 scored them, and printed a decision it cannot use. A scene lasts minutes and a poll lasts seconds.
 (Commit `3390ec7`, "Do not decide while a scene is already playing".)
+
+### Sits out while the slot is held for the player — BUILT, NOT VERIFIED IN GAME
+
+**What.** While Rapport holds its one scene slot for the player's own request
+(`Rapport:Core.PlayerHoldsSlot()`, Rapport 0.2.1), the pass ends as it does when a scene is running.
+
+**Why.** The owner's priority lane (Overture O-16): a deliberate player request outranks autonomy, and
+every request Chemistry could make is refused while the hold stands anyway. Counted with the busy
+passes in the tally. Rapport also re-checks at the door that nobody picked is talking to the player
+(its R-17), so the NPC the player is approaching is never walked off mid-sentence.
 
 ---
 
@@ -152,6 +168,12 @@ Chemistry never consults `CandidatePlayerNear`, and Rapport's own `playerNear` w
 `scoring.json`. The signal is still measured and still published, so this is a decision rather than
 a missing capability. A scene may therefore start in front of the player, and that is intended
 (`C-4`).
+
+**Amended by the owner, 2026-09-23 (Overture O-15): the player's LOVER is a factor.** Someone Rapport
+says is the player's lover (`AreLovers(npc, player)`, declared by Overture at a bond of 0.75 and a
+scene together) counts as spoken for: they pay the faithfulness cost with anyone else, and a scene
+anyway is recorded as an affair on that pair. Only the player's lover, and behind the MCM switch
+`bLoverSpokenFor` (on). BUILT, NOT VERIFIED IN GAME. The player's presence is still not a factor.
 
 ### An escalating refusal backoff — VERIFIED IN GAME (the condition, not the cure)
 

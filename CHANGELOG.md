@@ -6,6 +6,9 @@
   faithfulness cost as a married NPC when Chemistry pairs them with anyone else, and if it happens
   anyway it's recorded as an affair. On by default, with a switch in MCM (Personas). Needs Rapport
   0.2.1; with Rapport 0.2.0 nobody is anyone's lover and nothing changes.
+- **Your own scene comes first.** While Rapport holds its scene slot for a scene you asked for
+  (Overture), Chemistry sits the pass out instead of asking for one it would be refused. With Rapport
+  0.2.1, nobody who is talking to you is picked either: Rapport checks again at the moment it asks.
 
 ## 0.2.0
 
