@@ -9,6 +9,10 @@
 - **Your own scene comes first.** While Rapport holds its scene slot for a scene you asked for
   (Overture), Chemistry sits the pass out instead of asking for one it would be refused. With Rapport
   0.2.1, nobody who is talking to you is picked either: Rapport checks again at the moment it asks.
+- **A moved slider can no longer switch autonomy off.** Chemistry used to take any saved poll
+  interval as proof that MCM had read its settings. With the settings file missing, and only that one
+  slider ever moved, every other setting read as "off", and autonomy stopped by itself. The proof is
+  now a marker in the settings file that no slider can fake.
 
 ## 0.2.0
 

@@ -7,7 +7,9 @@ shows as the default). Every default is READ from Autonomy.psc's Defaults(), nev
 typed here, so the menu and the script's no-MCM behaviour cannot disagree. Re-run
 after changing a default there.
 
-Autonomy.psc reads these back every poll (LoadSettings) under the same ids.
+Autonomy.psc reads these back every poll (LoadSettings) under the same ids, and only
+when MCM has read THIS file: settings.ini carries [Meta] iDefaults=1, a key on no
+control, and LoadSettings must test it -- checked below, or nothing is written.
 Crowd tolerance is deliberately absent: Chemistry uses Rapport's (DESIGN C-6), and
 it is on Rapport's page.
 """
@@ -103,6 +105,15 @@ for title, rows in PAGES:
 missing = sorted(set(defaults) - used)
 if missing:
     raise SystemExit(f"Defaults() sets {missing} but the menu does not expose them - add or drop them")
+
+# The proof that MCM read this file: a key on no control, which no moved slider can
+# fake. LoadSettings must test it; a guard that is only a comment does not count.
+META_SECTION, META_KEY = "Meta", "iDefaults"
+ini[META_SECTION] = {META_KEY: "1"}
+load = re.search(r"^Function LoadSettings\(\)\n(.*?)^EndFunction", source, re.M | re.S)
+code = "\n".join(line.split(";", 1)[0] for line in load.group(1).splitlines()) if load else ""
+if not re.search(r'MCM\.GetModSettingInt\("Chemistry",\s*"iDefaults:Meta"\)\s*!=\s*1', code):
+    raise SystemExit('Autonomy.LoadSettings does not test MCM.GetModSettingInt("Chemistry", "iDefaults:Meta") != 1')
 
 config = {"modName": "Chemistry", "displayName": "Chemistry", "minMcmVersion": 1,
           "pluginRequirements": ["Chemistry.esp"], "pages": pages}

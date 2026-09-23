@@ -227,11 +227,15 @@ EndFunction
 ; poll with no event to register for. Without MCM, the defaults above.
 Function LoadSettings()
 	Self.Defaults()
-	; MCM answers 0 / false for a key it has no settings file for, and "false" for
-	; bEnabled is indistinguishable from the player switching autonomy off. The poll
-	; interval can never legitimately be 0 (its slider starts at 20), so a 0 there
-	; means MCM has nothing for Chemistry: keep the defaults, say so once.
-	If MCM.IsInstalled() && MCM.GetModSettingFloat("Chemistry", "fPollSeconds:General") <= 0.0
+	; Did MCM read OUR settings.ini? A key it never loaded reads -1, -1.0 or false
+	; (MEASURED in MCM's own source, reg2k/f4mcm SettingStore.cpp, 2026-09-23), and
+	; "false" for bEnabled is indistinguishable from the player switching autonomy off.
+	; The proof is [Meta] iDefaults=1, a key on NO control: MCM loads every key of the
+	; file, and no slider a player moved can fake it. The poll interval used to be the
+	; proof, and a player who had moved only that slider -- with settings.ini missing
+	; -- passed it while every other key read its unloaded value: autonomy off, the
+	; bar at -1. Overture's HasSettings had the same hole and the same fix.
+	If MCM.IsInstalled() && MCM.GetModSettingInt("Chemistry", "iDefaults:Meta") != 1
 		If !_saidNoMcm
 			Rapport:Core.Trace("chemistry: MCM is installed but has no Chemistry settings (Config/Chemistry/settings.ini missing?) - using the built-in defaults")
 			_saidNoMcm = True
