@@ -75,9 +75,11 @@ published, so this is a decision rather than a missing capability.
 A scene may therefore start in front of the player. That is intended.
 
 **Amended by the owner, 2026-09-23 (Overture O-15):** the player's LOVER is a factor. An NPC who is
-the player's lover (a store-side partner flag Overture sets) counts as spoken for, behind an MCM
-switch. Everything else in this decision stands: the player's presence is still not a factor. Not
-built yet.
+the player's lover counts as spoken for, behind an MCM switch (bLoverSpokenFor, on by default).
+Rapport keeps that as its own lovers flag (AreLovers), apart from the engine's spouses, and Overture
+sets it at a bond of 0.75 and a scene together (O-27). Everything else in this decision stands: the
+player's presence is still not a factor. Built (8d30da6, narrowed to the player's lover in the
+microscope pass); not yet run in game.
 
 ## C-5 - A crowd is prohibitive; a couple of onlookers is nothing (inherited)
 
@@ -223,8 +225,9 @@ their own partner. When a pair strays anyway, Chemistry records it as an affair 
 (`NoteAffair`), for the attitude layer to judge.
 
 **Amended by the owner, 2026-09-23 (Overture O-15):** "partnered elsewhere" includes being the
-player's lover (Rapport's store-side partner flag, set by Overture), behind an MCM switch. A scene
-anyway is an affair against the player. Not built yet.
+player's lover (Rapport's lovers flag, AreLovers(npc, player), set by Overture at a bond of 0.75
+and a scene), behind an MCM switch. A scene anyway is an affair against the player. Built; not yet
+run in game.
 
 ## C-10 - Chemistry tells the Narrator its share (2026-09-22)
 

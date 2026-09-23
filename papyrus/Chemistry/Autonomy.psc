@@ -83,10 +83,12 @@ Float fShyPenalty = 0.30
 ; charged. A pair that strays anyway is recorded as an affair in the store.
 Float fFaithWeight = 0.60
 ; C-4/C-9 as amended by the owner, 2026-09-23 (Overture O-15): the player's LOVER is
-; spoken for too. Someone Rapport's store says is the player's lover (Overture
-; declares it after a yes) pays the faithfulness cost with anyone else, and
-; straying is recorded as an affair against the player. A switch, as the owner
-; asked. Rapport 0.2.1 (API 201) knows lovers; an older one simply has none.
+; spoken for too. Someone Rapport's store says is the PLAYER's lover (Overture
+; declares it at a bond of 0.75 and a scene together, O-27) pays the faithfulness
+; cost with anyone else, and straying is recorded as an affair against the player.
+; Only the player's: lovers other addons declare between two NPCs are nothing this
+; switch was asked about. A switch, as the owner asked. Rapport 0.2.1 (API 201)
+; knows lovers; an older one simply has none.
 Bool bLoverSpokenFor = True
 Bool _hasLovers = False
 ; A "why nothing happened" line for the Narrator when the best pass came this close.
@@ -400,6 +402,16 @@ Function Consider()
 		EndIf
 		Return
 	EndIf
+	; The player's priority lane (Overture O-16): while the slot is held for the
+	; player's own request, every request this pass could make is refused -- so make
+	; none, and skip the reading, scoring and table that would lead to it.
+	If _hasLovers && Rapport:Core.PlayerHoldsSlot()
+		_blockedBusy += 1
+		If tally
+			Rapport:Core.Trace("chemistry: pass " + _passes + " - the scene slot is held for the player's own request, so nothing was considered." + Self.Tally())
+		EndIf
+		Return
+	EndIf
 
 	Self.Snapshot()
 	Int count = _held
@@ -557,10 +569,11 @@ Function Consider()
 	If took
 		Rapport:Core.Trace("chemistry:        asked, and Rapport took it." + Self.Tally())
 	Else
-		; Transient by definition: a scene is already running, or the bridge is not up.
+		; Transient by definition: a scene is already running, the bridge is not up,
+		; autonomy is paused, or the slot is held for the player's own request.
 		; Said anyway, because otherwise a full table ends with nothing and reads like
-		; a failure.
-		Rapport:Core.Trace("chemistry:        Rapport declined for now - a scene is already running, or the bridge is not ready. Trying again next poll.")
+		; a failure. Rapport.log's "request refused:" line says which.
+		Rapport:Core.Trace("chemistry:        Rapport declined for now - a scene is running, the bridge is not ready, autonomy is paused or the slot is held for the player (Rapport.log says which). Trying again next poll.")
 	EndIf
 EndFunction
 
@@ -646,11 +659,11 @@ Int Function ReadCandidates()
 	Return count
 EndFunction
 
-; Their declared lover (Rapport's SetLovers) is someone other than aiOther: for the
-; player's lover, always, since Chemistry never pairs the player (C-4).
-Bool Function LoverElsewhere(Int aiWho, Int aiOther)
-	Int lover = Rapport:Core.LoverOf(aiWho)
-	Return lover != 0 && lover != aiOther
+; Is this NPC the PLAYER's lover (Rapport's SetLovers)? Asked directly rather than
+; through LoverOf, which names only one of several lovers. Chemistry never pairs
+; the player (C-4), so the player's lover is always straying from the player here.
+Bool Function PlayersLover(Int aiWho)
+	Return Rapport:Core.AreLovers(aiWho, 20)
 EndFunction
 
 ; Partnership facts for slot aiIndex, once: couple, straying, and what straying costs.
@@ -663,16 +676,15 @@ Function ReadPartnership(Int aiIndex)
 	If a == None || b == None
 		Return
 	EndIf
-	Bool lovers = bLoverSpokenFor && _hasLovers
-	If Rapport:Relations.ArePartners(a, b) || (lovers && Rapport:Core.AreLovers(_first[aiIndex], _second[aiIndex]))
+	If Rapport:Relations.ArePartners(a, b)
 		_couple[aiIndex] = True
 		Return
 	EndIf
 	Bool aTaken = Rapport:Relations.HasPartner(a)
 	Bool bTaken = Rapport:Relations.HasPartner(b)
-	If lovers
-		aTaken = aTaken || Self.LoverElsewhere(_first[aiIndex], _second[aiIndex])
-		bTaken = bTaken || Self.LoverElsewhere(_second[aiIndex], _first[aiIndex])
+	If bLoverSpokenFor && _hasLovers
+		aTaken = aTaken || Self.PlayersLover(_first[aiIndex])
+		bTaken = bTaken || Self.PlayersLover(_second[aiIndex])
 	EndIf
 	_strays[aiIndex] = aTaken || bTaken
 	Float cost = 0.0
