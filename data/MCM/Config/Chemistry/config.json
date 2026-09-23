@@ -212,6 +212,15 @@
           }
         },
         {
+          "type": "switcher",
+          "id": "bLoverSpokenFor:Personas",
+          "text": "Your lover is spoken for",
+          "help": "Someone who is your lover (through Overture) pays the faithfulness cost with anyone else, and straying is recorded as an affair. Needs Rapport 0.2.1.",
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        },
+        {
           "type": "section",
           "text": "Refusals"
         },

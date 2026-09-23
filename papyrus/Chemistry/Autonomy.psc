@@ -82,6 +82,13 @@ Float fShyPenalty = 0.30
 ; almost never strays and a restless one often does. Their own partner is never
 ; charged. A pair that strays anyway is recorded as an affair in the store.
 Float fFaithWeight = 0.60
+; C-4/C-9 as amended by the owner, 2026-09-23 (Overture O-15): the player's LOVER is
+; spoken for too. Someone Rapport's store says is the player's lover (Overture
+; declares it after a yes) pays the faithfulness cost with anyone else, and
+; straying is recorded as an affair against the player. A switch, as the owner
+; asked. Rapport 0.2.1 (API 201) knows lovers; an older one simply has none.
+Bool bLoverSpokenFor = True
+Bool _hasLovers = False
 ; A "why nothing happened" line for the Narrator when the best pass came this close.
 Float fNearMissMargin = 0.30      ; per reticent member, in a crowd
 ; The most PersonaBonus can ever add (kindred + two vulgar in a crowd), for the
@@ -205,6 +212,7 @@ Function Defaults()
 	fAudienceBonus = 0.15
 	fShyPenalty = 0.30
 	fFaithWeight = 0.60
+	bLoverSpokenFor = True
 	fNearMissMargin = 0.30
 	fRefusalBackoffHours = 2.0
 	fRefusalBackoffCap = 48.0
@@ -238,11 +246,13 @@ Function LoadSettings()
 		fAudienceBonus = MCM.GetModSettingFloat("Chemistry", "fAudienceBonus:Personas")
 		fShyPenalty = MCM.GetModSettingFloat("Chemistry", "fShyPenalty:Personas")
 		fFaithWeight = MCM.GetModSettingFloat("Chemistry", "fFaithWeight:Personas")
+		bLoverSpokenFor = MCM.GetModSettingBool("Chemistry", "bLoverSpokenFor:Personas")
 		fNearMissMargin = MCM.GetModSettingFloat("Chemistry", "fNearMissMargin:General")
 		fRefusalBackoffHours = MCM.GetModSettingFloat("Chemistry", "fRefusalBackoffHours:Refusals")
 		fRefusalBackoffCap = MCM.GetModSettingFloat("Chemistry", "fRefusalBackoffCap:Refusals")
 		iLogLevel = MCM.GetModSettingInt("Chemistry", "iLogLevel:General")
 	EndIf
+	_hasLovers = Rapport:Core.ApiVersion() >= 201
 	; Derived, never a setting: the early exit in Consider must be at least the most
 	; the persona rules can add (kindred + two vulgar in a crowd), or it skips a pair
 	; they would have lifted over the best.
@@ -636,6 +646,13 @@ Int Function ReadCandidates()
 	Return count
 EndFunction
 
+; Their declared lover (Rapport's SetLovers) is someone other than aiOther: for the
+; player's lover, always, since Chemistry never pairs the player (C-4).
+Bool Function LoverElsewhere(Int aiWho, Int aiOther)
+	Int lover = Rapport:Core.LoverOf(aiWho)
+	Return lover != 0 && lover != aiOther
+EndFunction
+
 ; Partnership facts for slot aiIndex, once: couple, straying, and what straying costs.
 Function ReadPartnership(Int aiIndex)
 	_couple[aiIndex] = False
@@ -646,12 +663,17 @@ Function ReadPartnership(Int aiIndex)
 	If a == None || b == None
 		Return
 	EndIf
-	If Rapport:Relations.ArePartners(a, b)
+	Bool lovers = bLoverSpokenFor && _hasLovers
+	If Rapport:Relations.ArePartners(a, b) || (lovers && Rapport:Core.AreLovers(_first[aiIndex], _second[aiIndex]))
 		_couple[aiIndex] = True
 		Return
 	EndIf
 	Bool aTaken = Rapport:Relations.HasPartner(a)
 	Bool bTaken = Rapport:Relations.HasPartner(b)
+	If lovers
+		aTaken = aTaken || Self.LoverElsewhere(_first[aiIndex], _second[aiIndex])
+		bTaken = bTaken || Self.LoverElsewhere(_second[aiIndex], _first[aiIndex])
+	EndIf
 	_strays[aiIndex] = aTaken || bTaken
 	Float cost = 0.0
 	If aTaken

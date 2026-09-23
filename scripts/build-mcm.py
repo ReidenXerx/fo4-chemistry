@@ -66,6 +66,9 @@ PAGES = [
          "watching.", 0.0, 2.0, 0.05),
         ("Personas", "fFaithWeight", "Faithfulness weight", "Each NPC has a fixed faithfulness from 0 to 1. Pairing "
          "someone married or courting with anyone else costs this times it. 0 turns it off.", 0.0, 2.0, 0.05),
+        ("Personas", "bLoverSpokenFor", "Your lover is spoken for", "Someone who is your lover (through Overture) "
+         "pays the faithfulness cost with anyone else, and straying is recorded as an affair. Needs Rapport 0.2.1.",
+         None, None, None),
         ("section", "Refusals"),
         ("Refusals", "fRefusalBackoffHours", "Back off after a refusal (h)", "When AAF refuses someone, wait "
          "this long, and this much longer again with each further refusal.", 0.0, 24.0, 0.5),

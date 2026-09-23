@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Your lover is spoken for.** Someone who is your lover through Overture now pays the same
+  faithfulness cost as a married NPC when Chemistry pairs them with anyone else, and if it happens
+  anyway it's recorded as an affair. On by default, with a switch in MCM (Personas). Needs Rapport
+  0.2.1; with Rapport 0.2.0 nobody is anyone's lover and nothing changes.
+
 ## 0.2.0
 
 **Requires Rapport 0.2.0.** Chemistry checks it on load. Against an older Rapport it stays
