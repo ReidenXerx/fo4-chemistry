@@ -74,6 +74,11 @@ published, so this is a decision rather than a missing capability.
 
 A scene may therefore start in front of the player. That is intended.
 
+**Amended by the owner, 2026-09-23 (Overture O-15):** the player's LOVER is a factor. An NPC who is
+the player's lover (a store-side partner flag Overture sets) counts as spoken for, behind an MCM
+switch. Everything else in this decision stands: the player's presence is still not a factor. Not
+built yet.
+
 ## C-5 - A crowd is prohibitive; a couple of onlookers is nothing (inherited)
 
 Already Rapport's, verified rather than assumed: the penalty is
@@ -216,6 +221,10 @@ stable forever, on every machine, and free to save. Chemistry charges `fFaithWei
 for each member who is married or courting someone who is not in this pair. A partner never pays for
 their own partner. When a pair strays anyway, Chemistry records it as an affair in Rapport's store
 (`NoteAffair`), for the attitude layer to judge.
+
+**Amended by the owner, 2026-09-23 (Overture O-15):** "partnered elsewhere" includes being the
+player's lover (Rapport's store-side partner flag, set by Overture), behind an MCM switch. A scene
+anyway is an affair against the player. Not built yet.
 
 ## C-10 - Chemistry tells the Narrator its share (2026-09-22)
 
