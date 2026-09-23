@@ -5,13 +5,13 @@
   "color": "informational",
   "_breakdown": {
     "Papyrus": 693,
-    "Python": 278,
+    "Python": 284,
     "PowerShell": 120,
     "JavaScript": 105
   },
   "_files": 8,
   "_top": [
     "693 Papyrus",
-    "278 Python"
+    "284 Python"
   ]
 }
