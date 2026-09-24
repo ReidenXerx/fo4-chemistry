@@ -584,9 +584,15 @@ Function Consider(Bool abForce = False)
 	String scenario = Self.ScenarioFor(best)
 	Int quality = Rapport:Core.CanRun(scenario, akFirst, akSecond)
 	Bool took = False
+	String refusal = ""
 	If quality >= 0
 		Self.ReportToNarrator(best, bestFirst, bestSecond, akFirst, akSecond)
 		took = Rapport:Core.RequestScene(akFirst, akSecond, scenario)
+		; Rapport's words for a no, read at once: the door is shared, and after the
+		; three-second table below it could be somebody else's.
+		If !took
+			refusal = Rapport:Core.LastRefusal()
+		EndIf
 		; Whenever someone partnered elsewhere strays - whatever the faithfulness
 		; WEIGHT is (0 turns off the cost, not the record). Rapport holds it until the
 		; scene actually starts.
@@ -617,7 +623,11 @@ Function Consider(Bool abForce = False)
 		Rapport:Core.Trace("chemistry:        asked, and Rapport took it." + Self.Tally())
 		_lastResult = "asked for " + Self.Who(akFirst, akSecond) + " at " + Self.F2(bestScore) + " - Rapport took it"
 	Else
-		_lastResult = "chose " + Self.Who(akFirst, akSecond) + " at " + Self.F2(bestScore) + ", Rapport declined for now (Rapport.log says why)"
+		If refusal != ""
+			_lastResult = "chose " + Self.Who(akFirst, akSecond) + " at " + Self.F2(bestScore) + ", Rapport declined: " + refusal
+		Else
+			_lastResult = "chose " + Self.Who(akFirst, akSecond) + " at " + Self.F2(bestScore) + ", Rapport declined for now (Rapport.log says why)"
+		EndIf
 		; Transient by definition: a scene is already running, the bridge is not up,
 		; autonomy is paused, or the slot is held for the player's own request.
 		; Said anyway, because otherwise a full table ends with nothing and reads like
