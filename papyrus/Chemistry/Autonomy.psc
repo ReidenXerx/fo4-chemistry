@@ -151,6 +151,12 @@ Int _blockedBar = 0       ; passes where the best was under the bar
 Int _blockedEmpty = 0     ; passes where Rapport published nothing
 Int _blockedBusy = 0      ; passes skipped because a scene was already running
 
+; R-23 (Chemistry:DebugTriggers): what the last pass came to, in one line for the HUD,
+; and whether the pass on demand is FORCED -- the best pair Rapport offers, under the
+; bar, resting or backed off. Never set by the timer's own passes.
+String _lastResult = ""
+Bool _forceOnce = False
+
 
 ; ONE read of Rapport's list per pass, held here while this pass decides and then
 ; explains itself.
@@ -386,6 +392,33 @@ Event OnTimer(Int aiTimerID)
 	Self.Consider()
 EndEvent
 
+; ---- the decision on demand (R-23: Chemistry:DebugTriggers) -------------------
+; Owner poll, 2026-09-24: the decision now, twice. REAL is the ordinary pass, with
+; every gate the timer's pass has; FORCED takes the best pair Rapport offers, under
+; the bar, resting or backed off. Both still stop for a scene already running and
+; the player's held slot. Returns one line for the HUD.
+String Function ConsiderNow(Bool abForce)
+	String mode = "real"
+	If abForce
+		mode = "forced"
+	EndIf
+	If !Self.RapportIsNewEnough()
+		Return "Chemistry debug: Rapport is too old for this Chemistry"
+	EndIf
+	Self.LoadSettings()
+	If !bEnabled && !abForce
+		Return "Chemistry debug (real): Chemistry's autonomy is switched off (MCM)"
+	EndIf
+	_lastResult = ""
+	_forceOnce = abForce
+	Self.Consider()
+	_forceOnce = False
+	If _lastResult == ""
+		_lastResult = "the pass ended without a word - Rapport.log has its lines"
+	EndIf
+	Return "Chemistry debug (" + mode + "): " + _lastResult
+EndFunction
+
 ; ---- the decision -------------------------------------------------------------
 
 Function Consider()
@@ -403,6 +436,7 @@ Function Consider()
 	; that during one scene.
 	If Rapport:Core.Busy()
 		_blockedBusy += 1
+		_lastResult = "a scene is already running - one at a time"
 		If tally
 			Rapport:Core.Trace("chemistry: pass " + _passes + " - a scene is already running, so nothing was considered." + Self.Tally())
 		EndIf
@@ -413,6 +447,7 @@ Function Consider()
 	; none, and skip the reading, scoring and table that would lead to it.
 	If _hasLovers && Rapport:Core.PlayerHoldsSlot()
 		_blockedBusy += 1
+		_lastResult = "the scene slot is held for the player's own request"
 		If tally
 			Rapport:Core.Trace("chemistry: pass " + _passes + " - the scene slot is held for the player's own request, so nothing was considered." + Self.Tally())
 		EndIf
@@ -422,10 +457,12 @@ Function Consider()
 	Self.Snapshot()
 	Int count = _held
 	If _torn
+		_lastResult = "Rapport republished while Chemistry was reading - try again"
 		Return
 	EndIf
 	If count <= 0
 		_blockedEmpty += 1
+		_lastResult = "Rapport published nothing - no viable pair among the loaded actors"
 		If tally
 			Rapport:Core.Trace("chemistry: pass " + _passes + " - Rapport published nothing; no viable pair among the loaded actors." + Self.Tally())
 		EndIf
@@ -476,9 +513,11 @@ Function Consider()
 		If best >= 0 && (_score[i] + fBondCap + Self.MaxF(fOwnPlaceBonus, fFactionPlaceBonus) + fPersonaMax) <= bestScore
 			i = count
 		ElseIf firstID != 0 && secondID != 0
-			If !Self.Available(firstID) || !Self.Available(secondID)
+			; FORCED (R-23) takes the best pair Rapport offers: backed off, resting and
+			; under the bar count for nothing.
+			If !_forceOnce && (!Self.Available(firstID) || !Self.Available(secondID))
 				backedOff += 1
-			ElseIf Self.Rested(firstID) && Self.Rested(secondID)
+			ElseIf _forceOnce || (Self.Rested(firstID) && Self.Rested(secondID))
 				Float score = _score[i] + Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.PersonaBonus(i, firstID, secondID) + _faith[i]
 				If score > highest
 					highest = score
@@ -486,8 +525,9 @@ Function Consider()
 					missSecond = secondID
 					missIndex = i
 				EndIf
-				If score >= fMinimumScore
-					If score > bestScore
+				If score >= fMinimumScore || _forceOnce
+					; best < 0: a forced pass can have nothing but scores at or under 0.
+					If best < 0 || score > bestScore
 						bestScore = score
 						best = i
 						bestFirst = firstID
@@ -509,6 +549,7 @@ Function Consider()
 		Else
 			_blockedBar += 1
 		EndIf
+		_lastResult = "nobody: " + resting + " resting, " + backedOff + " backed off, " + tooLow + " under the " + Self.F2(fMinimumScore) + " bar" + Self.BestNote(highest)
 
 		If iLogLevel >= 2
 			Self.Table(count, 0, 0)
@@ -531,6 +572,7 @@ Function Consider()
 		; A failed cast assigns None in Papyrus rather than erroring, so this is
 		; checked rather than assumed.
 		Rapport:Core.Trace("chemistry: pass " + _passes + " - chose pair " + best + " but one of them no longer resolves; they may have unloaded since Rapport measured them. Skipping.")
+		_lastResult = "the chosen pair no longer resolves - one of them unloaded"
 		Return
 	EndIf
 
@@ -569,12 +611,15 @@ Function Consider()
 
 	If quality < 0
 		Rapport:Core.Trace("chemistry:        NOT ASKED: no scenario by that name. Check scenarios.json.")
+		_lastResult = "no scenario named " + scenario + " (scenarios.json)"
 		Return
 	EndIf
 
 	If took
 		Rapport:Core.Trace("chemistry:        asked, and Rapport took it." + Self.Tally())
+		_lastResult = "asked for " + Self.Who(akFirst, akSecond) + " at " + Self.F2(bestScore) + " - Rapport took it"
 	Else
+		_lastResult = "chose " + Self.Who(akFirst, akSecond) + " at " + Self.F2(bestScore) + ", Rapport declined for now (Rapport.log says why)"
 		; Transient by definition: a scene is already running, the bridge is not up,
 		; autonomy is paused, or the slot is held for the player's own request.
 		; Said anyway, because otherwise a full table ends with nothing and reads like

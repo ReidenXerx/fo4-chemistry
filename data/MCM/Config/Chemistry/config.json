@@ -249,6 +249,57 @@
           }
         }
       ]
+    },
+    {
+      "pageDisplayName": "Debug",
+      "content": [
+        {
+          "type": "text",
+          "text": "Chemistry's decision on demand, for testing: who pairs up and which scene plays, chosen now. FORCED skips the bar, resting and backing off; REAL is exactly the pass the timer runs."
+        },
+        {
+          "type": "section",
+          "text": "Decide"
+        },
+        {
+          "type": "button",
+          "text": "Decide now - FORCED",
+          "help": "Chemistry's decision this instant: the best pair Rapport offers, even under the bar, resting or backed off. Still waits for a running scene and the player's held slot.",
+          "action": {
+            "type": "CallGlobalFunction",
+            "script": "Chemistry:DebugTriggers",
+            "function": "DecideNowForced",
+            "params": []
+          }
+        },
+        {
+          "type": "button",
+          "text": "Decide now - REAL",
+          "help": "The ordinary pass, now instead of at the next poll, with every rule. The HUD says what it came to.",
+          "action": {
+            "type": "CallGlobalFunction",
+            "script": "Chemistry:DebugTriggers",
+            "function": "DecideNowReal",
+            "params": []
+          }
+        },
+        {
+          "type": "section",
+          "text": "Hotkeys"
+        },
+        {
+          "id": "ChemistryDecideNowForced",
+          "text": "Decide now - forced",
+          "type": "hotkey",
+          "help": "Chemistry's decision this instant: the best pair Rapport offers, even under the bar, resting or backed off. Still waits for a running scene and the player's held slot."
+        },
+        {
+          "id": "ChemistryDecideNowReal",
+          "text": "Decide now - real",
+          "type": "hotkey",
+          "help": "The ordinary pass, now instead of at the next poll, with every rule. The HUD says what it came to."
+        }
+      ]
     }
   ]
 }

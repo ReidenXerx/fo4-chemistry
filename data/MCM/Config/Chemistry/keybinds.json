@@ -1,0 +1,23 @@
+{
+  "modName": "Chemistry",
+  "keybinds": [
+    {
+      "id": "ChemistryDecideNowForced",
+      "desc": "Chemistry debug: Decide now - forced",
+      "action": {
+        "type": "CallGlobalFunction",
+        "script": "Chemistry:DebugTriggers",
+        "function": "DecideNowForced"
+      }
+    },
+    {
+      "id": "ChemistryDecideNowReal",
+      "desc": "Chemistry debug: Decide now - real",
+      "action": {
+        "type": "CallGlobalFunction",
+        "script": "Chemistry:DebugTriggers",
+        "function": "DecideNowReal"
+      }
+    }
+  ]
+}
