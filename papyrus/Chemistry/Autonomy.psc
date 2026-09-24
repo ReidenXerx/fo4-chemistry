@@ -151,11 +151,11 @@ Int _blockedBar = 0       ; passes where the best was under the bar
 Int _blockedEmpty = 0     ; passes where Rapport published nothing
 Int _blockedBusy = 0      ; passes skipped because a scene was already running
 
-; R-23 (Chemistry:DebugTriggers): what the last pass came to, in one line for the HUD,
-; and whether the pass on demand is FORCED -- the best pair Rapport offers, under the
-; bar, resting or backed off. Never set by the timer's own passes.
+; R-23 (Chemistry:DebugTriggers): what the last pass came to, in one line for the HUD.
+; FORCED itself is Consider's PARAMETER, not a field: a field set around the call
+; could be read by a timer pass interleaved at one of Consider's native calls
+; (review of R-23, 2026-09-24).
 String _lastResult = ""
-Bool _forceOnce = False
 
 
 ; ONE read of Rapport's list per pass, held here while this pass decides and then
@@ -389,7 +389,7 @@ Event OnTimer(Int aiTimerID)
 	If !bEnabled
 		Return
 	EndIf
-	Self.Consider()
+	Self.Consider(False)
 EndEvent
 
 ; ---- the decision on demand (R-23: Chemistry:DebugTriggers) -------------------
@@ -410,9 +410,7 @@ String Function ConsiderNow(Bool abForce)
 		Return "Chemistry debug (real): Chemistry's autonomy is switched off (MCM)"
 	EndIf
 	_lastResult = ""
-	_forceOnce = abForce
-	Self.Consider()
-	_forceOnce = False
+	Self.Consider(abForce)
 	If _lastResult == ""
 		_lastResult = "the pass ended without a word - Rapport.log has its lines"
 	EndIf
@@ -421,7 +419,7 @@ EndFunction
 
 ; ---- the decision -------------------------------------------------------------
 
-Function Consider()
+Function Consider(Bool abForce = False)
 	_passes += 1
 	_polls += 1
 
@@ -515,9 +513,9 @@ Function Consider()
 		ElseIf firstID != 0 && secondID != 0
 			; FORCED (R-23) takes the best pair Rapport offers: backed off, resting and
 			; under the bar count for nothing.
-			If !_forceOnce && (!Self.Available(firstID) || !Self.Available(secondID))
+			If !abForce && (!Self.Available(firstID) || !Self.Available(secondID))
 				backedOff += 1
-			ElseIf _forceOnce || (Self.Rested(firstID) && Self.Rested(secondID))
+			ElseIf abForce || (Self.Rested(firstID) && Self.Rested(secondID))
 				Float score = _score[i] + Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.PersonaBonus(i, firstID, secondID) + _faith[i]
 				If score > highest
 					highest = score
@@ -525,7 +523,7 @@ Function Consider()
 					missSecond = secondID
 					missIndex = i
 				EndIf
-				If score >= fMinimumScore || _forceOnce
+				If score >= fMinimumScore || abForce
 					; best < 0: a forced pass can have nothing but scores at or under 0.
 					If best < 0 || score > bestScore
 						bestScore = score
