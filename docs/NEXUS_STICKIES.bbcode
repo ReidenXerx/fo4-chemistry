@@ -1,0 +1,42 @@
+=== STICKY: Every feature and setting in Chemistry 0.2.1 ===
+[b]Every feature and setting in Chemistry 0.2.1[/b]
+The page tells the story; this is the complete list.
+
+[b]How a decision is made[/b]
+[list]
+[*]Every 30 seconds (never faster than 20), Chemistry takes one clean read of the up to 24 pairs Rapport ranked. If the list changes while it reads, it tries again, up to three times, then skips that pass rather than mix two lists.
+[*]Total = Rapport's score + bond + their place + personalities − spoken for. The best pair that clears the bar gets a scene; ties go to whoever was read first.
+[*][b]Bond[/b]: Rapport's bond between them × 1.00, capped at ±0.45. A married couple starts at +0.80, capped to +0.45; friends +0.15; enemies count against.
+[*][b]Their place[/b], indoors only: +0.45 if one of them owns it, +0.20 if their faction does, on top of Rapport's own indoor bonus.
+[*][b]Personalities[/b]: same kind +0.10; romantic with crude −0.10; with more than 2 watching, +0.15 per crude one and −0.30 per shy one.
+[*][b]Spoken for[/b]: someone married or courting someone else pays 0.60 × their faithfulness. A couple together pays nothing. If it happens anyway, it is recorded as an affair, even with the weight at 0.
+[*][b]Your lover[/b] (0.2.1, needs Rapport 0.2.1): someone Overture made your lover counts as spoken for.
+[*]Orientation (0.2.1): Rapport never offers a pair who would not want each other.
+[/list]
+[b]Who is left alone[/b]
+[list]
+[*]Anyone who had a scene rests 24 game hours, per person rather than per pair, so nobody has three partners in an evening.
+[*]Anyone AAF refused waits 2 hours per refusal, up to 48, so one bad afternoon costs little and a broken NPC drops out.
+[*]While a scene runs, or while you hold the scene slot for your own Overture scene (0.2.1), Chemistry does not even read the list.
+[*]No global rate limit and no settlement quota.
+[/list]
+[b]Which kind of scene[/b]
+[list]
+[*]In one of their own homes: at home, whoever walks through.
+[*]Indoors with at most 2 watching: at home. Outdoors with at most 2: tender, unless one of them is crude, then a quickie. More than 2 watching: a quickie.
+[*]"2 watching" is Rapport's own crowd setting, read live, so the two mods never disagree.
+[/list]
+[b]Telling you why[/b]
+[list]
+[*]Before a scene, Chemistry sends its numbers to Rapport's Narrator, so the line adds up to the real decision.
+[*]A pair within 0.30 of the bar can be narrated as a near miss, with a reason: the crowd, spoken for, broad daylight.
+[*]Rapport.log gets a line per pair with the whole sum and a verdict (resting, backed off, under the bar, eligible), and a tally per load.
+[/list]
+[b]Settings[/b] (MCM, applied within one pass)
+[list]
+[*]Autonomy: [i]Autonomous scenes[/i] on · [i]Score needed[/i] 0.90 · [i]Rest per person[/i] 24 h · [i]Check every[/i] 30 s · [i]Near miss within[/i] 0.30 · [i]Log detail[/i] 1 (0 quiet, 2 every pass) · [i]Their own home[/i] 0.45 · [i]Their faction's place[/i] 0.20
+[*]Relationships: [i]Bond weight[/i] 1.00 · [i]Bond cap[/i] 0.45 · [i]Same persona[/i] 0.10 · [i]Romantic with vulgar[/i] 0.10 · [i]Vulgar likes an audience[/i] 0.15 · [i]Reticent shy of crowds[/i] 0.30 · [i]Faithfulness weight[/i] 0.60 · [i]Your lover is spoken for[/i] on · [i]Back off after a refusal[/i] 2 h · [i]Longest back-off[/i] 48 h
+[*]Debug: [i]Decide now - REAL[/i] (every rule) and [i]Decide now - FORCED[/i] (skips the bar, the rest and the back-off), as buttons and hotkeys. The HUD says what happened.
+[*]Turning autonomy off pauses Chemistry and keeps Rapport's own stand-in off too.
+[/list]
+[b]Tested in game:[/b] waiting for a running scene, backing off from refusals, choosing the kind of scene. [b]Built, not yet run in a real game:[/b] your lover being spoken for, and waiting while you hold the scene slot. Tell us what you see.

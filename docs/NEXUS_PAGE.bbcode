@@ -1,0 +1,84 @@
+[center][img]https://cdn.jsdelivr.net/gh/ReidenXerx/fo4-chemistry@0ffe0e60e137c215aa5a40fd42d752aa63fae7c1/docs/img/hero.jpg[/img][/center]
+
+[center][size=4][b]NPC autonomy for Rapport. Every pair in range is weighed on how well they know each other, whose place it is, who is watching and whether one of them is spoken for, and most of the time the answer is no.[/b][/size][/center]
+
+[center]
+[url=https://github.com/ReidenXerx/fo4-chemistry][img]https://img.shields.io/badge/native%20code-none%20--%20Papyrus%20only-2f8f2f?style=for-the-badge&labelColor=2b2b2b[/img][/url] [url=https://github.com/ReidenXerx/fo4-chemistry/blob/master/LICENSE][img]https://img.shields.io/github/license/ReidenXerx/fo4-chemistry?color=blue&style=for-the-badge&labelColor=2b2b2b[/img][/url] [url=https://github.com/ReidenXerx/fo4-chemistry][img]https://img.shields.io/badge/source-GitHub-181717?style=for-the-badge&labelColor=2b2b2b&logo=github&logoColor=white[/img][/url]
+[url=https://github.com/ReidenXerx/fo4-chemistry][img]https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FReidenXerx%2Ffo4-chemistry%2Fbadges%2Floc.json&style=for-the-badge&labelColor=2b2b2b[/img][/url] [url=https://github.com/ReidenXerx/fo4-chemistry/commits][img]https://img.shields.io/github/last-commit/ReidenXerx/fo4-chemistry?label=last%20commit&style=for-the-badge&labelColor=2b2b2b[/img][/url]
+[img]https://img.shields.io/badge/Fallout%204-1.10.163%20%28old--gen%29-4a4a4a?style=for-the-badge&labelColor=2b2b2b[/img] [url=https://www.nexusmods.com/fallout4/mods/109219][img]https://img.shields.io/badge/requires-Rapport-8a5a00?style=for-the-badge&labelColor=2b2b2b[/img][/url]
+[/center]
+
+[center][img]https://cdn.jsdelivr.net/gh/ReidenXerx/fo4-chemistry@0ffe0e60e137c215aa5a40fd42d752aa63fae7c1/docs/img/divider.png[/img][/center]
+
+[size=5][b][color=#3fd6bd]What it is[/color][/b][/size]
+
+Chemistry decides [i]when[/i] two NPCs get together, and what kind of scene it is. That is all it does: [url=https://www.nexusmods.com/fallout4/mods/109219]Rapport[/url] does everything you see and hear, the voices, the faces, the bystanders, the Narrator. Chemistry is two Papyrus scripts and one small plugin, with no DLL, no textures and no animations of its own.
+
+[size=5][b][color=#3fd6bd]What you get[/color][/b][/size]
+
+[list]
+[*][b]Couples, not coincidences.[/b] People who already know each other, spouses, family, friends, co-workers, are far likelier to get together, and every scene they share brings them closer.
+[*][b]Their own place.[/b] A pair indoors in one of their own homes, or in their faction's building, is much likelier. At home it is unhurried, whoever walks through.
+[*][b]Personalities matter.[/b] Two of a kind get on; the romantic and the crude one clash; the crude one likes an audience, and the shy one hates one.
+[*][b]Faithfulness.[/b] Married and courting NPCs mostly stay true, each by their own nature: a devoted spouse almost never strays, a restless one might. If they do, it is remembered as an affair.
+[*][b]Your lover is spoken for[/b] (new in 0.2.1). If Overture has made someone your lover, they are treated as taken when anybody else comes along.
+[*][b]Nobody runs wild.[/b] Each person rests a day after a scene, and anyone AAF keeps refusing is left alone for longer each time.
+[/list]
+
+[center][img]https://cdn.jsdelivr.net/gh/ReidenXerx/fo4-chemistry@0ffe0e60e137c215aa5a40fd42d752aa63fae7c1/docs/img/score.jpg[/img][/center]
+
+[size=5][b][color=#3fd6bd]How it works[/color][/b][/size]
+
+Every 30 seconds or so, Chemistry reads the pairs Rapport has ranked and adds what it knows about them. The best pair that clears the bar gets a scene; if nobody clears it, nothing happens, and that is most of the time. The place and the audience then pick which of Rapport's three scenes it is:
+
+[center][img]https://cdn.jsdelivr.net/gh/ReidenXerx/fo4-chemistry@0ffe0e60e137c215aa5a40fd42d752aa63fae7c1/docs/img/story.jpg[/img][/center]
+
+When nothing happens, the Narrator can tell you who nearly did and why: switch on [i]Why nothing happened[/i] in Rapport's MCM. Every decision is also written to [font=Courier New]Rapport.log[/font], pair by pair, with the numbers.
+
+[center][img]https://cdn.jsdelivr.net/gh/ReidenXerx/fo4-chemistry@0ffe0e60e137c215aa5a40fd42d752aa63fae7c1/docs/img/divider.png[/img][/center]
+
+[size=5][b][color=#3fd6bd]New in 0.2.1[/color][/b][/size]
+
+[list]
+[*][b]Your settings always apply.[/b] Chemistry now reads its settings through Rapport, because MCM's own store sometimes answered as if nothing was set.
+[*][b]Pairs respect orientation.[/b] Rapport 0.2.1 never offers a pair who would not want each other, so neither does Chemistry.
+[*][b]Your lover is spoken for[/b], above.
+[*][b]Your own scene comes first.[/b] While Rapport holds its one scene slot for a scene you asked for in Overture, Chemistry waits.
+[*][b]A moved slider can no longer switch autonomy off by accident.[/b]
+[/list]
+
+[size=5][b][color=#3fd6bd]Before you play[/color][/b][/size]
+
+[quote]
+[b]Chemistry needs Rapport 0.2.1 or newer[/b], loaded before it. Against an older Rapport it does nothing and says so once in [font=Courier New]Rapport.log[/font]; update Rapport and it starts on the next load, with no reinstall. It cannot run without Rapport.
+
+[b]MCM is optional.[/b] Without it, the defaults apply, and they are what is described above.
+[/quote]
+
+[size=5][b][color=#3fd6bd]FAQ[/color][/b][/size]
+
+[b]Will scenes happen in front of me?[/b]
+[spoiler]They can. Whether you are nearby is deliberately not a factor, so the world does not stop because you walked in. The crowd around them is a factor, and you do not count as the crowd.[/spoiler]
+
+[b]Too many scenes, or too few?[/b]
+[spoiler]Raise or lower [i]Score needed[/i] (default 0.90) and [i]Rest per person[/i] (default 24 game hours) in MCM. There is no global rate limit: a busy settlement has more scenes simply because it has more pairs.[/spoiler]
+
+[b]Can I make it decide right now?[/b]
+[spoiler]Yes, from MCM's Debug page or two hotkeys: REAL runs an ordinary decision with every rule, FORCED takes the best pair regardless of the bar and the rest time. Both still wait for a running scene.[/spoiler]
+
+[b]Is all of it tested in game?[/b]
+[spoiler]Most of it, and we say which. Waiting for a running scene, backing off from refusals and choosing the kind of scene were all checked in game. The two newest rules, your lover being spoken for and waiting while you hold the scene slot, are built but not yet run in a real game. If you see them work, or not, please tell us.[/spoiler]
+
+[b]Where is every setting explained?[/b]
+[spoiler]In the sticky post, with every MCM control and what it does.[/spoiler]
+
+[center][img]https://cdn.jsdelivr.net/gh/ReidenXerx/fo4-chemistry@0ffe0e60e137c215aa5a40fd42d752aa63fae7c1/docs/img/divider.png[/img][/center]
+
+[size=5][b][color=#3fd6bd]Credits[/color][/b][/size]
+
+[list]
+[*][b]Dagobaking[/b] for [url=https://www.nexusmods.com/fallout4/mods/31304]AAF[/url], which every scene plays on.
+[*]Everything Chemistry decides is carried out by [url=https://www.nexusmods.com/fallout4/mods/109219]Rapport[/url].
+[/list]
+
+Bugs go to the [b]Bugs[/b] tab, with [font=Courier New]Rapport.log[/font] (Chemistry's lines start with [font=Courier New]chemistry:[/font]).
