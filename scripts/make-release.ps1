@@ -74,4 +74,4 @@ Write-Host ''
 Write-Host ("  {0}" -f $item.FullName)
 Write-Host ("  {0:N0} bytes, {1} file(s)" -f $item.Length, @(Get-ChildItem $stage -Recurse -File).Count)
 Write-Host ''
-Write-Host 'Requires Rapport 0.2.0 or newer. Against an older Rapport it stays idle and says so once in Rapport.log.'
+Write-Host 'Requires Rapport 0.2.1 or newer (API 201). Against an older Rapport it stays idle and says so once in Rapport.log.'
