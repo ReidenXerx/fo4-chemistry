@@ -34,6 +34,11 @@ PAGES = [
     ("Autonomy", [
         ("text", "Chemistry decides who pairs up and which scene plays, on top of Rapport's score. Crowd "
                  "tolerance is on Rapport's page: both mods use that one number."),
+        ("section", "Starting"),
+        ("button", "Start now", "Chemistry waits until you leave Vault 111. If an alternate start mod means it "
+         "never started, press this: Chemistry, Rapport and the mods built on it start now, in this save. "
+         "Needs Rapport 0.2.2.",
+         {"type": "CallGlobalFunction", "script": "Rapport:Core", "function": "StartNow", "params": []}),
         ("section", "General"),
         ("General", "bEnabled", "Autonomous scenes", "Off pauses Chemistry: nothing starts on its own, and "
          "Rapport's built-in trigger stays off too.", None, None, None),
@@ -85,6 +90,9 @@ for title, rows in PAGES:
         if row[0] in ("text", "section"):
             content.append({"type": row[0], "text": row[1]})
             continue
+        if row[0] == "button":
+            content.append({"type": "button", "text": row[1], "help": row[2], "action": row[3]})
+            continue
         section, key, label, help_, lo, hi, step = row
         if key not in defaults:
             raise SystemExit(f"{key} has no default in Defaults() - the menu would invent one")
@@ -112,8 +120,10 @@ META_SECTION, META_KEY = "Meta", "iDefaults"
 ini[META_SECTION] = {META_KEY: "1"}
 load = re.search(r"^Function LoadSettings\(\)\n(.*?)^EndFunction", source, re.M | re.S)
 code = "\n".join(line.split(";", 1)[0] for line in load.group(1).splitlines()) if load else ""
-if not re.search(r'MCM\.GetModSettingInt\("Chemistry",\s*"iDefaults:Meta"\)\s*!=\s*1', code):
-    raise SystemExit('Autonomy.LoadSettings does not test MCM.GetModSettingInt("Chemistry", "iDefaults:Meta") != 1')
+# Rapport's reader since 9b548d5 (MCM.GetModSetting* answered 0 on 3 loads of 4). Its default
+# must be 0, or a missing file would read as "settings present".
+if not re.search(r'Rapport:Core\.ModSettingInt\("Chemistry",\s*"iDefaults:Meta",\s*0\)\s*!=\s*1', code):
+    raise SystemExit('Autonomy.LoadSettings does not test Rapport:Core.ModSettingInt("Chemistry", "iDefaults:Meta", 0) != 1')
 
 # R-23 (owner poll, 2026-09-24): the decision on demand, twice -- REAL is the ordinary
 # pass now, FORCED the best pair Rapport offers -- as buttons and as hotkeys. The

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.2 (unreleased)
+
+- **Not during the game's opening.** Chemistry picks nobody from character creation through
+  pre-war Sanctuary and Vault 111, and starts when you leave the vault. This fixes the report of
+  frozen Vault 111 dwellers pairing up. The rule is Rapport 0.2.2's, so it holds for any mod built
+  on Rapport. Alternate starts and MS Skip Prewar Sanctuary work as expected.
+- **Start now.** If an unusual alternate start means nothing ever started, the MCM page's
+  "Start now" starts Chemistry, Rapport and the mods built on it, in that save. Needs Rapport 0.2.2.
+
 ## 0.2.1 (2026-09-25)
 
 **Requires Rapport 0.2.1.** Against an older Rapport, Chemistry stays idle and says why, as before.

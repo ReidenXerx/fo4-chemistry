@@ -15,6 +15,21 @@
         },
         {
           "type": "section",
+          "text": "Starting"
+        },
+        {
+          "type": "button",
+          "text": "Start now",
+          "help": "Chemistry waits until you leave Vault 111. If an alternate start mod means it never started, press this: Chemistry, Rapport and the mods built on it start now, in this save. Needs Rapport 0.2.2.",
+          "action": {
+            "type": "CallGlobalFunction",
+            "script": "Rapport:Core",
+            "function": "StartNow",
+            "params": []
+          }
+        },
+        {
+          "type": "section",
           "text": "General"
         },
         {
