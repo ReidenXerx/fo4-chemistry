@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.2 (unreleased)
+## 0.2.2 (2026-09-26)
 
 - **Not during the game's opening.** Chemistry picks nobody from character creation through
   pre-war Sanctuary and Vault 111, and starts when you leave the vault. This fixes the report of
