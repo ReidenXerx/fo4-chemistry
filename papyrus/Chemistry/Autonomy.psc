@@ -241,30 +241,35 @@ Function LoadSettings()
 	; proof, and a player who had moved only that slider -- with settings.ini missing
 	; -- passed it while every other key read its unloaded value: autonomy off, the
 	; bar at -1. Overture's HasSettings had the same hole and the same fix.
-	If MCM.IsInstalled() && MCM.GetModSettingInt("Chemistry", "iDefaults:Meta") != 1
+	; Read from the FILES through Rapport, not MCM's own store: on the owner's game
+	; (2026-09-25) MCM.GetModSetting* answered 0 for a key the shipped settings.ini has on
+	; 3 loads of 4 (Overture's same fix, fo4-rapport McmSettings::ModSetting). The player's
+	; MCM ini wins, then the shipped settings.ini; each default is the built-in value
+	; Defaults() just set, so a key neither file has keeps it.
+	If Rapport:Core.ModSettingInt("Chemistry", "iDefaults:Meta", 0) != 1
 		If !_saidNoMcm
-			Rapport:Core.Trace("chemistry: MCM is installed but has no Chemistry settings (Config/Chemistry/settings.ini missing?) - using the built-in defaults")
+			Rapport:Core.Trace("chemistry: MCM/Config/Chemistry/settings.ini is not there - using the built-in defaults")
 			_saidNoMcm = True
 		EndIf
-	ElseIf MCM.IsInstalled()
-		bEnabled = MCM.GetModSettingBool("Chemistry", "bEnabled:General")
-		fPollSeconds = Self.AtLeast(MCM.GetModSettingFloat("Chemistry", "fPollSeconds:General"), 20.0)
-		fCooldownHours = MCM.GetModSettingFloat("Chemistry", "fCooldownHours:General")
-		fMinimumScore = MCM.GetModSettingFloat("Chemistry", "fMinimumScore:General")
-		fOwnPlaceBonus = MCM.GetModSettingFloat("Chemistry", "fOwnPlaceBonus:Place")
-		fFactionPlaceBonus = MCM.GetModSettingFloat("Chemistry", "fFactionPlaceBonus:Place")
-		fBondWeight = MCM.GetModSettingFloat("Chemistry", "fBondWeight:Bond")
-		fBondCap = MCM.GetModSettingFloat("Chemistry", "fBondCap:Bond")
-		fKindredBonus = MCM.GetModSettingFloat("Chemistry", "fKindredBonus:Personas")
-		fClashPenalty = MCM.GetModSettingFloat("Chemistry", "fClashPenalty:Personas")
-		fAudienceBonus = MCM.GetModSettingFloat("Chemistry", "fAudienceBonus:Personas")
-		fShyPenalty = MCM.GetModSettingFloat("Chemistry", "fShyPenalty:Personas")
-		fFaithWeight = MCM.GetModSettingFloat("Chemistry", "fFaithWeight:Personas")
-		bLoverSpokenFor = MCM.GetModSettingBool("Chemistry", "bLoverSpokenFor:Personas")
-		fNearMissMargin = MCM.GetModSettingFloat("Chemistry", "fNearMissMargin:General")
-		fRefusalBackoffHours = MCM.GetModSettingFloat("Chemistry", "fRefusalBackoffHours:Refusals")
-		fRefusalBackoffCap = MCM.GetModSettingFloat("Chemistry", "fRefusalBackoffCap:Refusals")
-		iLogLevel = MCM.GetModSettingInt("Chemistry", "iLogLevel:General")
+	Else
+		bEnabled = Rapport:Core.ModSettingBool("Chemistry", "bEnabled:General", bEnabled)
+		fPollSeconds = Self.AtLeast(Rapport:Core.ModSettingFloat("Chemistry", "fPollSeconds:General", fPollSeconds), 20.0)
+		fCooldownHours = Rapport:Core.ModSettingFloat("Chemistry", "fCooldownHours:General", fCooldownHours)
+		fMinimumScore = Rapport:Core.ModSettingFloat("Chemistry", "fMinimumScore:General", fMinimumScore)
+		fOwnPlaceBonus = Rapport:Core.ModSettingFloat("Chemistry", "fOwnPlaceBonus:Place", fOwnPlaceBonus)
+		fFactionPlaceBonus = Rapport:Core.ModSettingFloat("Chemistry", "fFactionPlaceBonus:Place", fFactionPlaceBonus)
+		fBondWeight = Rapport:Core.ModSettingFloat("Chemistry", "fBondWeight:Bond", fBondWeight)
+		fBondCap = Rapport:Core.ModSettingFloat("Chemistry", "fBondCap:Bond", fBondCap)
+		fKindredBonus = Rapport:Core.ModSettingFloat("Chemistry", "fKindredBonus:Personas", fKindredBonus)
+		fClashPenalty = Rapport:Core.ModSettingFloat("Chemistry", "fClashPenalty:Personas", fClashPenalty)
+		fAudienceBonus = Rapport:Core.ModSettingFloat("Chemistry", "fAudienceBonus:Personas", fAudienceBonus)
+		fShyPenalty = Rapport:Core.ModSettingFloat("Chemistry", "fShyPenalty:Personas", fShyPenalty)
+		fFaithWeight = Rapport:Core.ModSettingFloat("Chemistry", "fFaithWeight:Personas", fFaithWeight)
+		bLoverSpokenFor = Rapport:Core.ModSettingBool("Chemistry", "bLoverSpokenFor:Personas", bLoverSpokenFor)
+		fNearMissMargin = Rapport:Core.ModSettingFloat("Chemistry", "fNearMissMargin:General", fNearMissMargin)
+		fRefusalBackoffHours = Rapport:Core.ModSettingFloat("Chemistry", "fRefusalBackoffHours:Refusals", fRefusalBackoffHours)
+		fRefusalBackoffCap = Rapport:Core.ModSettingFloat("Chemistry", "fRefusalBackoffCap:Refusals", fRefusalBackoffCap)
+		iLogLevel = Rapport:Core.ModSettingInt("Chemistry", "iLogLevel:General", iLogLevel)
 	EndIf
 	_hasLovers = Rapport:Core.ApiVersion() >= 201
 	; Derived, never a setting: the early exit in Consider must be at least the most
