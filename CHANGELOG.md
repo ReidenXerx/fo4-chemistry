@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 (2026-09-25)
 
 **Requires Rapport 0.2.1.** Against an older Rapport, Chemistry stays idle and says why, as before.
 

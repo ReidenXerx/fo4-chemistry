@@ -32,7 +32,7 @@ with the reason. Read the one you are about to change. Several of them are not f
 - **`iCrowdTolerance` must equal Rapport's `observerTolerance`** in `scoring.json`. If they ever
   disagree, one layer calls a pair private while the other calls it crowded — which is exactly the
   contradiction the first version shipped with, and the log caught it inside two scenes.
-- **`fRepeatCap` exists to prevent a rut**, not to be tidy. It is what separates "these two have
+- **`fBondCap` exists to prevent a rut**, not to be tidy. It is what separates "these two have
   something" from "these two are the only two".
 - **`fCooldownHours` is per actor, not per pair**, and that is the stricter reading on purpose.
 
