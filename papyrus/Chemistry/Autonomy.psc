@@ -295,7 +295,9 @@ Float Function AtLeast(Float afValue, Float afFloor)
 EndFunction
 
 ; Rapport's API version this script needs (major*10000 + minor*100 + patch).
-Int Property iNeedsRapport = 200 AutoReadOnly
+; 201: LoadSettings reads through Rapport's ModSetting* natives, which 0.2.0 does not have
+; (release review, 2026-09-25) -- against 0.2.0 no setting would ever load.
+Int Property iNeedsRapport = 201 AutoReadOnly
 
 Bool Function RapportIsNewEnough()
 	Int have = Rapport:Core.ApiVersion()

@@ -2,10 +2,18 @@
 
 ## Unreleased
 
+**Requires Rapport 0.2.1.** Against an older Rapport, Chemistry stays idle and says why, as before.
+
+- **Your MCM settings always apply.** Chemistry used to read them through MCM's own store, which on
+  some loads answered as if nothing was set, so Chemistry ran on its built-in numbers. It now reads the
+  settings files itself, through Rapport 0.2.1, and falls back to each built-in value only when neither
+  your MCM file nor the shipped one names that setting.
+- **Pairs respect orientation.** Rapport 0.2.1 never offers a pair who would not want each other, so
+  neither does Chemistry.
 - **Your lover is spoken for.** Someone who is your lover through Overture now pays the same
   faithfulness cost as a married NPC when Chemistry pairs them with anyone else, and if it happens
   anyway it's recorded as an affair. On by default, with a switch in MCM (Personas). Needs Rapport
-  0.2.1; with Rapport 0.2.0 nobody is anyone's lover and nothing changes.
+  0.2.1.
 - **Your own scene comes first.** While Rapport holds its scene slot for a scene you asked for
   (Overture), Chemistry sits the pass out instead of asking for one it would be refused. With Rapport
   0.2.1, nobody who is talking to you is picked either: Rapport checks again at the moment it asks.

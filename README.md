@@ -3,7 +3,7 @@
 NPC autonomy for Fallout 4: adult NPCs occasionally start AAF scenes with each other, because they
 chose to rather than because a perk was sprayed on them.
 
-**Requires [Rapport](https://www.nexusmods.com/fallout4/mods/109219) 0.2.0 or newer.** Chemistry decides; Rapport does.
+**Requires [Rapport](https://www.nexusmods.com/fallout4/mods/109219) 0.2.1 or newer.** Chemistry decides; Rapport does.
 
 ## What it is
 
