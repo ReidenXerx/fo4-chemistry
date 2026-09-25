@@ -1,0 +1,33 @@
+=== STICKY: How Chemistry works inside ===
+[b]How Chemistry works inside[/b]
+For players and modders who want the mechanism. The features and settings are in the other stickies. Numbers are the shipped defaults; the script is Autonomy.psc, on GitHub.
+
+[b]Who does what[/b]
+Rapport measures, Chemistry decides. Every 20 s Rapport scans the loaded people, drops everyone who cannot take part (children never; the dead, the busy, the quest-held, the unconscious, the game's opening), scores every remaining pair and publishes its best 24 with every signal. Chemistry adds what it knows about them, picks one or none, and asks Rapport for the scene. Rapport then re-checks everything at its own door.
+
+[b]The pass[/b] (every [b]30 s[/b], never faster than 20)
+[list]
+[*]Skipped while a scene is already running, and while the player's own scene (Overture) holds Rapport's slot.
+[*]Rapport's list is read whole, then each pair is weighed.
+[*]A pair is out if either one had a scene in the last [b]24 game hours[/b] (resting), or if either one is backing off after AAF refused them: [b]2 hours per refusal[/b], up to [b]48[/b].
+[/list]
+
+[b]The total: Rapport's score plus four terms[/b]
+[list]
+[*][b]Bond[/b]: the pair's relationship from Rapport's store, x 1.0, capped at [b]+/-0.45[/b]. It starts from the game's own relationships (rank x 0.15, plus 0.20 for a partner: a married couple 0.80, so at the cap) and rises by 15% of the distance left with every scene together.
+[*][b]Whose place[/b], indoors only: [b]+0.45[/b] in one of their own homes (the cell's owner), [b]+0.20[/b] in a building of their faction.
+[*][b]Personas[/b]: [b]+0.10[/b] for two of a kind, [b]-0.10[/b] for a romantic with a vulgar one. When more people watch than Rapport's crowd tolerance, a vulgar one adds [b]+0.15[/b] and a reticent one costs [b]-0.30[/b].
+[*][b]Spoken for[/b]: for each one with a partner (or who is the player's lover, a switch), [b]-0.60 x their faithfulness[/b]. A married pair together pays nothing. If a pair with someone spoken for happens anyway, Rapport records it as an affair.
+[/list]
+The best total that reaches the bar of [b]0.90[/b] gets the scene. If none does, nothing happens this pass; a pair within 0.30 of the bar can be narrated as a near miss.
+
+[b]Which scene[/b]
+[list]
+[*]Their own home, or indoors without a crowd: [b]at home[/b], the long one.
+[*]Outdoors without a crowd: [b]tender[/b], or a [b]quickie[/b] if either of them is vulgar.
+[*]A crowd: a [b]quickie[/b].
+[/list]
+Before asking, Chemistry asks Rapport whether that kind of scene can run with the animation packs installed (CanRun). A pass logs every pair, every term and the verdict to Rapport.log (level 2 shows the table every pass; the default shows it when Chemistry acts).
+
+[b]What it does not do[/b]
+Chemistry has no filters of its own for who may take part: that is Rapport's, so every addon on Rapport obeys the same rules. It never consults the player's position (a scene may start in front of you, by design). Without a new enough Rapport it stays idle and says so once.

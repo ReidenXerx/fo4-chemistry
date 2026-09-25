@@ -94,7 +94,7 @@ Float fFaithWeight = 0.60
 Bool bLoverSpokenFor = True
 Bool _hasLovers = False
 ; A "why nothing happened" line for the Narrator when the best pass came this close.
-Float fNearMissMargin = 0.30      ; per reticent member, in a crowd
+Float fNearMissMargin = 0.30
 ; The most PersonaBonus can ever add (kindred + two vulgar in a crowd), for the
 ; early exit in Consider: it must never be smaller than the real maximum.
 Float fPersonaMax = 0.40
