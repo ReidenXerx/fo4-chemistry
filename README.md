@@ -45,7 +45,7 @@ too.
 
 | | |
 | --- | --- |
-| Rapport | The framework, and everything it requires — Fallout 4 1.10.163, F4SE 0.6.23, AAF 1.7.4.1. |
+| Rapport | 0.2.3 or newer for the Anniversary Edition. The framework, and everything it requires: Fallout 4 1.10.163 with F4SE 0.6.23 or AE 1.11.x with F4SE 0.7.9, Runtime Database, AAF 1.7.4.1. |
 | Load order | `Chemistry.esp` **after** `Rapport.esp`. |
 
 Chemistry needs no assets of its own, no textures and no animations. **MCM is optional**: with it,

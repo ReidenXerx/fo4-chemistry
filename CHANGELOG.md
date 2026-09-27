@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.3 (2026-09-27)
+
+- **Chemistry.esp is a light plugin** and no longer takes a load-order slot. Its one quest sits
+  at 0x800, inside a light plugin's range, so nothing else changes.
+- **Runs on the Anniversary Edition too**, through Rapport 0.2.3, which is one DLL for 1.10.163
+  and AE 1.11.x and now needs Runtime Database. Chemistry itself is scripts only.
+
 ## 0.2.2 (2026-09-26)
 
 - **Not during the game's opening.** Chemistry picks nobody from character creation through
