@@ -18,7 +18,7 @@ either asks for one scene or explains in the log why it asked for none.
 | **Couples can emerge** | A pair with history is mildly likelier — and capped, because the failure it is guarding against is a rut where the same two monopolise a settlement. |
 | **Whose place it is** | Their own home earns the long, unhurried story whatever the room count. Somebody walking through your house is not an audience in a market. |
 | **A crowd is prohibitive; two onlookers are nothing** | The same tolerance Rapport already uses, deliberately the same number, because one layer calling a pair private while the other calls it crowded is the contradiction this shipped with once. |
-| **It stops asking the NPC who always says no** | An escalating backoff on refusals. AAF leaves a busy flag on an NPC for the rest of the save if a request dies badly, and one such NPC scores top of the list and burns a request every time. |
+| **It stops asking the NPC who always says no** | An escalating backoff on refusals. An NPC AAF keeps refusing would otherwise score top of the list and burn a request every time. |
 | **Bond and persona** | A pair's bond in Rapport's relationship store counts, married couples before their first scene too. Personas bend who pairs and which story plays (C-8). |
 | **Your lover is spoken for** | Someone who is your lover through Overture pays the same faithfulness cost as a married NPC with anyone else, and straying is recorded as an affair. A switch in MCM (with Rapport 0.2.1). |
 | **Your own scene comes first** | While Rapport holds its one scene slot for a scene you asked for, Chemistry waits (with Rapport 0.2.1). |
