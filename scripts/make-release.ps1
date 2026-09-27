@@ -59,7 +59,10 @@ Copy-Item $mcm $stage -Recurse -Force
 
 foreach ($doc in 'LICENSE', 'README.md') {
     $p = Join-Path $root $doc
-    if (Test-Path $p) { Copy-Item $p $stage -Force }
+    # Under Docs\Chemistry, never the Data root: every mod's LICENSE and README would collide
+    # there (fallout-collection, 2026-09-27: Overture's met PCL's in Vortex).
+    $docs = Join-Path $stage 'Docs\Chemistry'
+    if (Test-Path $p) { New-Item -ItemType Directory -Force $docs | Out-Null; Copy-Item $p $docs -Force }
 }
 
 $zip = Join-Path $OutDir "Chemistry-$version.zip"
