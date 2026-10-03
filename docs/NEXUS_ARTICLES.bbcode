@@ -1,0 +1,32 @@
+=== ARTICLE: Chemistry - under the hood ===
+[size=4][b]What Chemistry is made of[/b][/size]
+
+Chemistry is two Papyrus scripts and one small plugin, with no DLL, no textures and no animations of its own. It decides when two NPCs get together and what kind of scene it is. Rapport does everything you see and hear.
+
+[size=4][b]How a decision goes[/b][/size]
+
+Every 30 seconds or so, Chemistry reads the pairs Rapport has ranked and adds what it knows about them. The best pair that clears the bar gets a scene. If nobody clears it, nothing happens, and that is most of the time. The place and the audience then pick which of Rapport's three scenes it is.
+
+[size=4][b]Reading the decision log[/b][/size]
+
+Every decision is written to [font=Courier New]Rapport.log[/font], pair by pair, with the numbers.
+
+[center][img]https://cdn.jsdelivr.net/gh/ReidenXerx/fo4-chemistry@63e6741af3a8ff2f200de390be9a2fe3df6145c5/docs/img/decision.jpg[/img][/center]
+
+One real pass from a test session: nine pairs weighed, six of them resting after a scene that day, and the best pair left that cleared the bar got the scene.
+
+[size=4][b]Finding room for the scene[/b][/size]
+
+[center][img]https://cdn.jsdelivr.net/gh/ReidenXerx/fo4-chemistry@63e6741af3a8ff2f200de390be9a2fe3df6145c5/docs/img/placement.jpg[/img][/center]
+
+Then Rapport found them room. AAF had put that scene inside a couch, so Rapport tried 176 spots around it and moved it to the clearest one both of them could walk to.
+
+[size=4][b]Settings and timing details[/b][/size]
+
+[list]
+[*]Chemistry reads its settings through Rapport, because MCM's own store sometimes answered as if nothing was set.[/*]
+[*]Rapport 0.2.1 never offers a pair who would not want each other, so neither does Chemistry.[/*]
+[*]While Rapport holds its one scene slot for a scene you asked for in Overture, Chemistry waits.[/*]
+[*]A moved slider can no longer switch autonomy off by accident.[/*]
+[*]Chemistry.esp is a light plugin, so it takes no load-order slot. With Rapport 0.2.3 it runs on the Anniversary Edition too, and nobody can skip their day's rest when the game clock steps back.[/*]
+[/list]
