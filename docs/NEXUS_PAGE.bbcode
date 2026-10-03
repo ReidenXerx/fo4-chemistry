@@ -33,7 +33,7 @@
 
 [size=5][b][color=#3fd6bd]What it is[/color][/b][/size]
 
-Chemistry decides [i]when[/i] two NPCs get together, and what kind of scene it is. That is all it does. [url=https://www.nexusmods.com/fallout4/mods/109219]Rapport[/url] does everything you see and hear: the voices, the faces, the bystanders and the Narrator. Chemistry is two Papyrus scripts and one small plugin. It has no DLL, no textures and no animations of its own.
+Chemistry decides [i]when[/i] two NPCs get together, and what kind of scene it is. That is all it does. Rapport on its own doesn't start scenes: Chemistry is what makes NPCs pair up. [url=https://www.nexusmods.com/fallout4/mods/109219]Rapport[/url] does everything you see and hear: the voices, the faces, the bystanders and the Narrator. Chemistry is two Papyrus scripts and one small plugin. It has no DLL, no textures and no animations of its own.
 
 Every pair of NPCs nearby is weighed on how well they know each other, whose place it is, who is watching and whether one of them is spoken for. Most of the time the answer is no.
 
@@ -58,7 +58,7 @@ Every 30 seconds or so, Chemistry looks at the pairs Rapport has ranked and adds
 
 [center][img]https://cdn.jsdelivr.net/gh/ReidenXerx/fo4-chemistry@63e6741af3a8ff2f200de390be9a2fe3df6145c5/docs/img/story.jpg[/img][/center]
 
-When nothing happens, the Narrator can tell you who nearly did and why. Switch on [i]Why nothing happened[/i] in Rapport's MCM (the in-game settings menu).
+When nothing happens, Rapport's Narrator tells you who nearly did and why (MCM, the in-game settings menu: Narrator).
 
 [b]How it works, in detail:[/b] [url=https://www.nexusmods.com/fallout4/articles/6681]Chemistry - under the hood →[/url]
 
@@ -72,8 +72,7 @@ When nothing happens, the Narrator can tell you who nearly did and why. Switch o
 [*][b]Your own scene comes first.[/b] While Rapport holds its one scene slot for a scene you asked for in Overture, Chemistry waits.[/*]
 [*][b]A moved slider can no longer switch autonomy off by accident.[/b][/*]
 [*][b]Light plugin.[/b] Chemistry.esp is an ESL, a light plugin that takes no load-order slot. With Rapport 0.2.3 it runs on the Anniversary Edition too.[/*]
-[/list]
-[size=5][b][color=#3fd6bd]Before you play[/color][/b][/size]
+[/list][size=5][b][color=#3fd6bd]Before you play[/color][/b][/size]
 
 [quote]
 [b]Chemistry needs Rapport 0.2.1 or newer[/b], loaded before it. With an older Rapport it does nothing and says so once in [font=Courier New]Rapport.log[/font]. Update Rapport and it starts on the next load, with no reinstall. It cannot run without Rapport.
