@@ -4,7 +4,8 @@
 
 - **Servitrons are always willing.** Nothing in Chemistry holds one back: not her own
   faithfulness, a persona clash or shyness. Her partner still has their own reasons. Needs
-  Servitron.esm (optional) and a Rapport that offers Servitrons as candidates.
+  Rapport 0.2.19 or newer, which brings Servitrons into everyday life; with an older Rapport,
+  Chemistry works as before.
 
 ## 0.2.3 (2026-09-27)
 
