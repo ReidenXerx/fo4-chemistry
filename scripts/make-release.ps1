@@ -33,9 +33,15 @@ if ((Test-Path $existing) -and -not $Force) {
     throw "Chemistry-$version.zip already exists. Bump VERSION, or pass -Force to rebuild this exact version on purpose."
 }
 
-$stage = Join-Path $OutDir "Chemistry-$version"
-if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+# A FOMOD at the zip root and the mod itself under Core (nexus-tools/docs/FOMOD-STANDARD.md, owner
+# 2026-10-01: Vortex and MO2 only, every requirement a FOMOD can see hard-blocked).
+$pkg = Join-Path $OutDir "Chemistry-$version"
+if (Test-Path $pkg) { Remove-Item $pkg -Recurse -Force }
+$stage = Join-Path $pkg 'Core'
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
+$fomod = Join-Path $root 'fomod'
+if (-not (Test-Path (Join-Path $fomod 'ModuleConfig.xml'))) { throw 'No fomod\ModuleConfig.xml.' }
+Copy-Item $fomod $pkg -Recurse -Force
 
 $esp = Join-Path $root 'data\Chemistry.esp'
 if (-not (Test-Path $esp)) { throw "MISSING: data\Chemistry.esp -- run tools/make_esp.py" }
@@ -67,19 +73,19 @@ foreach ($doc in 'LICENSE', 'README.md') {
 
 $zip = Join-Path $OutDir "Chemistry-$version.zip"
 if (Test-Path $zip) { Remove-Item $zip -Force }
-Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -CompressionLevel Optimal
+Compress-Archive -Path (Join-Path $pkg '*') -DestinationPath $zip -CompressionLevel Optimal
 
 Write-Host "Assembling Chemistry $version"
 Write-Host ''
 Write-Host 'Contents:'
-Get-ChildItem $stage -Recurse -File |
-    ForEach-Object { $_.FullName.Substring($stage.Length + 1) } |
+Get-ChildItem $pkg -Recurse -File |
+    ForEach-Object { $_.FullName.Substring($pkg.Length + 1) } |
     Sort-Object |
     ForEach-Object { Write-Host "    $_" }
 
 $item = Get-Item $zip
 Write-Host ''
 Write-Host ("  {0}" -f $item.FullName)
-Write-Host ("  {0:N0} bytes, {1} file(s)" -f $item.Length, @(Get-ChildItem $stage -Recurse -File).Count)
+Write-Host ("  {0:N0} bytes, {1} file(s)" -f $item.Length, @(Get-ChildItem $pkg -Recurse -File).Count)
 Write-Host ''
-Write-Host 'Requires Rapport 0.2.1 or newer (API 201). Against an older Rapport it stays idle and says so once in Rapport.log.'
+Write-Host 'Requires Rapport 0.2.1 or newer (API 201); Servitrons need Rapport 0.2.19. Against a Rapport older than 0.2.1 it stays idle and says so once in Rapport.log.'

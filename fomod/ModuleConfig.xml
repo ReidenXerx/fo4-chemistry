@@ -1,0 +1,115 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="http://qconsulting.ca/fo3/ModConfig5.0.xsd">
+  <moduleName>Chemistry</moduleName>
+  <moduleImage path="fomod/images/hero.jpg"/>
+
+  <!-- FOMOD standard rule 2: the plugins both managers can see, and refuse the install without.
+       Chemistry is scripts only and runs on every game version, so no gameDependency. Rapport's own
+       version is checked at run time (Rapport.log says so once if it is too old). -->
+  <moduleDependencies operator="And">
+    <fileDependency file="Rapport.esp" state="Active"/>
+    <fileDependency file="AAF.esm" state="Active"/>
+  </moduleDependencies>
+
+  <requiredInstallFiles>
+    <folder source="Core" destination="" priority="0"/>
+  </requiredInstallFiles>
+
+  <installSteps order="Explicit">
+    <installStep name="Checking your setup">
+      <optionalFileGroups order="Explicit">
+        <group name="Checking your setup" type="SelectAll">
+          <plugins order="Explicit">
+            <plugin name="Checking your setup">
+              <description>Rapport.esp: found. Rapport plays every scene Chemistry picks; Chemistry needs Rapport 0.2.1 or newer, and Servitrons need 0.2.19 or newer.
+AAF.esm: found. Advanced Animation Framework plays the scenes for Rapport.
+F4SE: check this yourself. Rapport is an F4SE plugin: start the game through f4se_loader.exe (f4se.silverlock.org).
+MCM: check this yourself. Optional: Mod Configuration Menu gives Chemistry its settings page and hotkeys; without it everything runs on its defaults.
+Install Chemistry after Rapport, with Vortex or MO2. Manual installs are not supported.</description>
+              <image path="fomod/images/hero.jpg"/>
+              <typeDescriptor><type name="Required"/></typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+    <installStep name="NPCs find each other">
+      <optionalFileGroups order="Explicit">
+        <group name="NPCs find each other" type="SelectAll">
+          <plugins order="Explicit">
+            <plugin name="NPCs find each other">
+              <description>In vanilla Fallout 4, NPCs never get together on their own. About every 30 seconds Chemistry weighs the pairs nearby and, now and then, picks one for a scene; Rapport plays it. Most of the time the answer is no: scenes are rare on purpose, and each person rests a day after one.</description>
+              <image path="fomod/images/decision.jpg"/>
+              <typeDescriptor><type name="Required"/></typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+    <installStep name="Couples, not coincidences">
+      <optionalFileGroups order="Explicit">
+        <group name="Couples, not coincidences" type="SelectAll">
+          <plugins order="Explicit">
+            <plugin name="Couples, not coincidences">
+              <description>People who already know each other, such as spouses, family, friends and co-workers, are far likelier to get together, and every scene they share brings them closer. A married couple starts close before their first scene.</description>
+              <image path="fomod/images/bond.jpg"/>
+              <typeDescriptor><type name="Required"/></typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+    <installStep name="Their own place">
+      <optionalFileGroups order="Explicit">
+        <group name="Their own place" type="SelectAll">
+          <plugins order="Explicit">
+            <plugin name="Their own place">
+              <description>A pair indoors in one of their own homes, or in their faction's building, is much likelier to get together, and at home it is unhurried, whoever walks through.</description>
+              <image path="fomod/images/placement.jpg"/>
+              <typeDescriptor><type name="Required"/></typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+    <installStep name="Personalities and faithfulness">
+      <optionalFileGroups order="Explicit">
+        <group name="Personalities and faithfulness" type="SelectAll">
+          <plugins order="Explicit">
+            <plugin name="Personalities and faithfulness">
+              <description>Two of a kind get on; the romantic one and the crude one clash; the crude one likes an audience and the shy one hates one. Married NPCs mostly stay true, each by their own nature, and a stray is remembered as an affair. Your lover from Overture counts as taken.</description>
+              <image path="fomod/images/score.jpg"/>
+              <typeDescriptor><type name="Required"/></typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+    <installStep name="The right kind of scene">
+      <optionalFileGroups order="Explicit">
+        <group name="The right kind of scene" type="SelectAll">
+          <plugins order="Explicit">
+            <plugin name="The right kind of scene">
+              <description>The place and the crowd pick which of Rapport's scenes it is: a long one at home, a slow one somewhere quiet, a quick one with people around. When nothing happens, Rapport's Narrator can tell you who nearly did and why.</description>
+              <image path="fomod/images/story.jpg"/>
+              <typeDescriptor><type name="Required"/></typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+    <installStep name="Servitrons are always willing">
+      <optionalFileGroups order="Explicit">
+        <group name="Servitrons are always willing" type="SelectAll">
+          <plugins order="Explicit">
+            <plugin name="Servitrons are always willing">
+              <description>With Anatomy Servitron and Rapport 0.2.19 or newer, Servitrons join everyday life. Nothing in Chemistry holds one back: not her own faithfulness, a clash of personalities or shyness. Her partner still has their own reasons, and their orientation applies to the body she wears.</description>
+              <typeDescriptor><type name="Required"/></typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+  </installSteps>
+</config>

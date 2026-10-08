@@ -1,11 +1,12 @@
 # Changelog
 
-## 0.2.4 (unreleased)
+## 0.2.4 (2026-10-08)
 
 - **Servitrons are always willing.** Nothing in Chemistry holds one back: not her own
   faithfulness, a persona clash or shyness. Her partner still has their own reasons. Needs
   Rapport 0.2.19 or newer, which brings Servitrons into everyday life; with an older Rapport,
   Chemistry works as before.
+- **Installs with a FOMOD** in Vortex or MO2, which checks for Rapport and AAF first.
 
 ## 0.2.3 (2026-09-27)
 
