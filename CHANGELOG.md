@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4 (unreleased)
+
+- **Servitrons are always willing.** Nothing in Chemistry holds one back: not her own
+  faithfulness, a persona clash or shyness. Her partner still has their own reasons. Needs
+  Servitron.esm (optional) and a Rapport that offers Servitrons as candidates.
+
 ## 0.2.3 (2026-09-27)
 
 - **Chemistry.esp is a light plugin** and no longer takes a load-order slot. Its one quest sits

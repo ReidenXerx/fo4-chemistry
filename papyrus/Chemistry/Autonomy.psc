@@ -194,6 +194,14 @@ Bool[] _couple       ; they are each other's partners
 Bool[] _strays       ; a member is partnered to someone ELSE (an affair if it plays)
 Int _held = 0
 
+; Servitron.esm's race (0x000F99), or None without it. Re-read on every load, so
+; adding or removing that mod mid-playthrough needs nothing else. Owner 2026-10-08:
+; "our robots should always love to have sex" -- nothing in Chemistry holds a
+; Servitron back (her own faithfulness, a persona clash, shyness). Her PARTNER's
+; brakes still apply: only she is always willing. Who she is (woman or man by the
+; abdomen worn), whether she may pair at all, and orientation are Rapport's door.
+Race _servitron
+
 ; ---- lifecycle ----------------------------------------------------------------
 
 Event OnQuestInit()
@@ -233,6 +241,11 @@ EndFunction
 ; poll with no event to register for. Without MCM, the defaults above.
 Function LoadSettings()
 	Self.Defaults()
+	; Here rather than in Connect: this also runs on every load.
+	_servitron = None
+	If Game.IsPluginInstalled("Servitron.esm")
+		_servitron = Game.GetFormFromFile(0x00000F99, "Servitron.esm") as Race
+	EndIf
 	; Did MCM read OUR settings.ini? A key it never loaded reads -1, -1.0 or false
 	; (MEASURED in MCM's own source, reg2k/f4mcm SettingStore.cpp, 2026-09-23), and
 	; "false" for bEnabled is indistinguishable from the player switching autonomy off.
@@ -754,10 +767,12 @@ Function ReadPartnership(Int aiIndex)
 	EndIf
 	_strays[aiIndex] = aTaken || bTaken
 	Float cost = 0.0
-	If aTaken
+	; A Servitron's own faithfulness never holds her back; the straying is still
+	; recorded (_strays), so an affair is still an affair.
+	If aTaken && !Self.IsServitron(a)
 		cost -= fFaithWeight * Rapport:Core.FaithfulnessOf(_first[aiIndex])
 	EndIf
-	If bTaken
+	If bTaken && !Self.IsServitron(b)
 		cost -= fFaithWeight * Rapport:Core.FaithfulnessOf(_second[aiIndex])
 	EndIf
 	If fFaithWeight <= 0.0
@@ -1114,25 +1129,32 @@ EndFunction
 Float Function PersonaBonus(Int aiIndex, Int aiFirst, Int aiSecond)
 	String a = Rapport:Core.PersonaOf(aiFirst)
 	String b = Rapport:Core.PersonaOf(aiSecond)
+	; A Servitron clashes with nobody and is never shy; what she adds still counts.
+	Bool aBot = Self.IsServitron(Game.GetForm(aiFirst) as Actor)
+	Bool bBot = Self.IsServitron(Game.GetForm(aiSecond) as Actor)
 	Float bonus = 0.0
 	If a != "" && a == b
 		bonus += fKindredBonus
-	ElseIf (a == "romantic" && b == "vulgar") || (a == "vulgar" && b == "romantic")
+	ElseIf !aBot && !bBot && ((a == "romantic" && b == "vulgar") || (a == "vulgar" && b == "romantic"))
 		bonus -= fClashPenalty
 	EndIf
 	If _observers[aiIndex] > iCrowdTolerance
 		If a == "vulgar"
 			bonus += fAudienceBonus
-		ElseIf a == "reticent"
+		ElseIf a == "reticent" && !aBot
 			bonus -= fShyPenalty
 		EndIf
 		If b == "vulgar"
 			bonus += fAudienceBonus
-		ElseIf b == "reticent"
+		ElseIf b == "reticent" && !bBot
 			bonus -= fShyPenalty
 		EndIf
 	EndIf
 	Return bonus
+EndFunction
+
+Bool Function IsServitron(Actor akWho)
+	Return _servitron != None && akWho != None && akWho.GetRace() == _servitron
 EndFunction
 
 Bool Function EitherIs(Int aiIndex, String asPersona)
