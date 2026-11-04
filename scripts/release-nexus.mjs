@@ -54,7 +54,18 @@ if (!isReleasableVersion(version)) fail(`${version} is not a plain x.y.z`);
 const changelog = fs.readFileSync(path.join(root, "CHANGELOG.md"), "utf8");
 const sec = changelog.split(/^## /m).find((s) => s.trimStart().startsWith(version));
 if (!sec) fail(`CHANGELOG.md has no "## ${version}" section`);
-const notes = sec.slice(version.length).trim();
+// One line per bullet. Nexus stores every line as its own changelog entry, so the
+// heading's "(date)" and each wrapped continuation line showed up as bullets of their
+// own (0.2.5, 2026-11-04): drop the heading line, join continuations to their bullet.
+const entries = [];
+for (const line of sec.split(/\r?\n/).slice(1)) {
+  const t = line.trim();
+  if (!t) continue;
+  if (/^[-*]\s+/.test(t)) entries.push(t.replace(/^[-*]\s+/, ""));
+  else if (entries.length) entries[entries.length - 1] += ` ${t}`;
+  else entries.push(t);
+}
+const notes = entries.join("\n");
 
 // ── the archive, and what is actually inside it ──────────────────────────
 const zipName = `Chemistry-${version}.zip`;
