@@ -20,7 +20,7 @@
 [CmdletBinding()]
 param(
     [string] $Base     = 'D:\F4CustomMods\PapyrusBase\Source\Base',
-    [string] $Compiler = 'D:\GOGGames\Fallout 4 GOTY\Papyrus Compiler\PapyrusCompiler.exe',
+    [string] $Compiler = 'D:\F4Tools\Papyrus Compiler\PapyrusCompiler.exe',
     # Chemistry calls Rapport:Core, so Rapport's sources must be on the IMPORT path.
     # Imported, not compiled: nothing of Rapport's is built or shipped from here. If
     # this path is wrong the failure is "variable Rapport:Core is undefined", which
