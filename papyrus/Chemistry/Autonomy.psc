@@ -124,6 +124,21 @@ Int iCrowdTolerance = 2
 Float fRefusalBackoffHours = 2.0
 Float fRefusalBackoffCap = 48.0
 
+; Owner 2026-11-05, on a player's "the sex kind of takes over the game": scenes were
+; rare per PAIR and frequent per TOWN. Every pass takes the best of everyone nearby, so
+; the more people about, the likelier SOME pair clears the bar, and lowering the
+; sliders barely helped. This is the town's clock: at most one autonomous scene per
+; this many game hours, anywhere. 0 turns it off.
+Float fSceneGapHours = 6.0
+; Raiders are exempt from that clock and from the crowd, and like each other this
+; much more. A pair counts only when BOTH are in RaiderFaction.
+Float fRaiderBonus = 0.20
+; Past Rapport's crowd tolerance, every further onlooker costs this much, up to the
+; cap. Not in their own home (C-6: whoever walks through, the room is theirs). The
+; persona audience bonus and shy penalty still apply on top.
+Float fCrowdPenalty = 0.15
+Float fCrowdPenaltyCap = 0.60
+
 ; ---- how much it says ---------------------------------------------------------
 ;
 ;   0  only when it acts, plus a tally every iTallyEvery polls
@@ -150,6 +165,12 @@ Int _blockedResting = 0   ; passes where everything eligible was resting
 Int _blockedBar = 0       ; passes where the best was under the bar
 Int _blockedEmpty = 0     ; passes where Rapport published nothing
 Int _blockedBusy = 0      ; passes skipped because a scene was already running
+Int _blockedGap = 0       ; passes where the town's clock left only raiders
+Int _blockedTalking = 0   ; passes whose choice was in a conversation with the player
+
+; When the last autonomous scene outside the raiders started, in game DAYS
+; (Utility.GetCurrentGameTime). In the save, so a reload does not reset the clock.
+Float _lastSceneDay = -1000.0
 
 ; R-23 (Chemistry:DebugTriggers): what the last pass came to, in one line for the HUD.
 ; FORCED itself is Consider's PARAMETER, not a field: a field set around the call
@@ -192,7 +213,11 @@ Float[] _distance
 Float[] _faith       ; what straying costs this pair (<= 0), from ReadPartnership
 Bool[] _couple       ; they are each other's partners
 Bool[] _strays       ; a member is partnered to someone ELSE (an affair if it plays)
+Bool[] _raiders      ; both are raiders
 Int _held = 0
+
+; Fallout4.esm RaiderFaction (0x01CBED, read from the master 2026-11-04).
+Faction _raiderFaction
 
 ; Servitron.esm's race (0x000F99), or None without it. Re-read on every load, so
 ; adding or removing that mod mid-playthrough needs nothing else. Owner 2026-10-08:
@@ -234,6 +259,10 @@ Function Defaults()
 	fNearMissMargin = 0.30
 	fRefusalBackoffHours = 2.0
 	fRefusalBackoffCap = 48.0
+	fSceneGapHours = 6.0
+	fRaiderBonus = 0.20
+	fCrowdPenalty = 0.15
+	fCrowdPenaltyCap = 0.60
 	iLogLevel = 1
 EndFunction
 
@@ -245,6 +274,9 @@ Function LoadSettings()
 	_servitron = None
 	If Game.IsPluginInstalled("Servitron.esm")
 		_servitron = Game.GetFormFromFile(0x00000F99, "Servitron.esm") as Race
+	EndIf
+	If _raiderFaction == None
+		_raiderFaction = Game.GetFormFromFile(0x0001CBED, "Fallout4.esm") as Faction
 	EndIf
 	; Did MCM read OUR settings.ini? A key it never loaded reads -1, -1.0 or false
 	; (MEASURED in MCM's own source, reg2k/f4mcm SettingStore.cpp, 2026-09-23), and
@@ -282,6 +314,10 @@ Function LoadSettings()
 		fNearMissMargin = Rapport:Core.ModSettingFloat("Chemistry", "fNearMissMargin:General", fNearMissMargin)
 		fRefusalBackoffHours = Rapport:Core.ModSettingFloat("Chemistry", "fRefusalBackoffHours:Refusals", fRefusalBackoffHours)
 		fRefusalBackoffCap = Rapport:Core.ModSettingFloat("Chemistry", "fRefusalBackoffCap:Refusals", fRefusalBackoffCap)
+		fSceneGapHours = Rapport:Core.ModSettingFloat("Chemistry", "fSceneGapHours:General", fSceneGapHours)
+		fRaiderBonus = Rapport:Core.ModSettingFloat("Chemistry", "fRaiderBonus:Place", fRaiderBonus)
+		fCrowdPenalty = Rapport:Core.ModSettingFloat("Chemistry", "fCrowdPenalty:Place", fCrowdPenalty)
+		fCrowdPenaltyCap = Rapport:Core.ModSettingFloat("Chemistry", "fCrowdPenaltyCap:Place", fCrowdPenaltyCap)
 		iLogLevel = Rapport:Core.ModSettingInt("Chemistry", "iLogLevel:General", iLogLevel)
 	EndIf
 	_hasLovers = Rapport:Core.ApiVersion() >= 201
@@ -365,6 +401,8 @@ Function Connect()
 	_blockedBar = 0
 	_blockedEmpty = 0
 	_blockedBusy = 0
+	_blockedGap = 0
+	_blockedTalking = 0
 	_polls = 0
 
 	; Cancel before starting, unconditionally. Both OnQuestInit and OnInit can fire,
@@ -501,10 +539,16 @@ Function Consider(Bool abForce = False)
 	; Seen in the log rather than reasoned about: pass 4 chose "Johnny Friendly +
 	; Polly at 1.26" while the table printed that same pair at 1.02 and BACKED OFF.
 	; Two different snapshots, one decision.
+	; The town's clock (owner 2026-11-05). Closed, only raider pairs are considered;
+	; FORCED ignores it like every other gate.
+	Float sinceLast = (Utility.GetCurrentGameTime() - _lastSceneDay) * 24.0
+	Bool gapOpen = abForce || fSceneGapHours <= 0.0 || sinceLast >= fSceneGapHours
+
 	Int best = -1
 	Int bestFirst = 0
 	Int bestSecond = 0
 	Float bestScore = 0.0
+	Int waiting = 0
 	Int resting = 0
 	Int backedOff = 0
 	Int tooLow = 0
@@ -528,15 +572,17 @@ Function Consider(Bool abForce = False)
 		; Safe for the report: the resting / backed-off / under-bar counters are only
 		; read in the "nobody qualified" branch, which is reached only when there is
 		; no best, in which case this never triggers.
-		If best >= 0 && (_score[i] + fBondCap + Self.MaxF(fOwnPlaceBonus, fFactionPlaceBonus) + fPersonaMax) <= bestScore
+		If best >= 0 && (_score[i] + fBondCap + Self.MaxF(fOwnPlaceBonus, fFactionPlaceBonus) + Self.AtLeast(fRaiderBonus, 0.0) + fPersonaMax) <= bestScore
 			i = count
 		ElseIf firstID != 0 && secondID != 0
 			; FORCED (R-23) takes the best pair Rapport offers: backed off, resting and
 			; under the bar count for nothing.
-			If !abForce && (!Self.Available(firstID) || !Self.Available(secondID))
+			If !gapOpen && !_raiders[i]
+				waiting += 1
+			ElseIf !abForce && (!Self.Available(firstID) || !Self.Available(secondID))
 				backedOff += 1
 			ElseIf abForce || (Self.Rested(firstID) && Self.Rested(secondID))
-				Float score = _score[i] + Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.PersonaBonus(i, firstID, secondID) + _faith[i]
+				Float score = _score[i] + Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.CrowdBonus(i) + Self.PersonaBonus(i, firstID, secondID) + _faith[i]
 				If score > highest
 					highest = score
 					missFirst = firstID
@@ -562,18 +608,22 @@ Function Consider(Bool abForce = False)
 	EndWhile
 
 	If best < 0
-		If resting > 0 && tooLow == 0
+		String clock = ""
+		If !gapOpen
+			_blockedGap += 1
+			clock = Self.F2(sinceLast) + "h since the last scene, " + Self.F2(fSceneGapHours - sinceLast) + "h until the next (" + waiting + " pair(s) waiting, raiders excepted); "
+		ElseIf resting > 0 && tooLow == 0
 			_blockedResting += 1
 		Else
 			_blockedBar += 1
 		EndIf
-		_lastResult = "nobody: " + resting + " resting, " + backedOff + " backed off, " + tooLow + " under the " + Self.F2(fMinimumScore) + " bar" + Self.BestNote(highest)
+		_lastResult = "nobody: " + clock + resting + " resting, " + backedOff + " backed off, " + tooLow + " under the " + Self.F2(fMinimumScore) + " bar" + Self.BestNote(highest)
 
 		If iLogLevel >= 2
 			Self.Table(count, 0, 0)
-			Rapport:Core.Trace("chemistry:     -> nobody: " + resting + " resting, " + backedOff + " backed off, " + tooLow + " under the bar" + Self.BestNote(highest))
+			Rapport:Core.Trace("chemistry:     -> nobody: " + clock + resting + " resting, " + backedOff + " backed off, " + tooLow + " under the bar" + Self.BestNote(highest))
 		ElseIf tally
-			Rapport:Core.Trace("chemistry: pass " + _passes + " - passed on all " + count + " pair(s): " + resting + " resting, " + backedOff + " backed off after refusals, " + tooLow + " under the " + Self.F2(fMinimumScore) + " bar" + Self.BestNote(highest) + "." + Self.Tally())
+			Rapport:Core.Trace("chemistry: pass " + _passes + " - passed on all " + count + " pair(s): " + clock + resting + " resting, " + backedOff + " backed off after refusals, " + tooLow + " under the " + Self.F2(fMinimumScore) + " bar" + Self.BestNote(highest) + "." + Self.Tally())
 		EndIf
 		; The Narrator's "why nothing happened": only for a pair that came close, and
 		; Rapport decides whether it is time to say so (it rate-limits).
@@ -591,6 +641,19 @@ Function Consider(Bool abForce = False)
 		; checked rather than assumed.
 		Rapport:Core.Trace("chemistry: pass " + _passes + " - chose pair " + best + " but one of them no longer resolves; they may have unloaded since Rapport measured them. Skipping.")
 		_lastResult = "the chosen pair no longer resolves - one of them unloaded"
+		Return
+	EndIf
+
+	; Owner 2026-11-05 (a player's CTD: Skinny Malone and Darla were picked while he
+	; talked to Skinny). Rapport refuses these at its door too; asked here as well, on
+	; the winner only, because Rapport's list can be 20 s old and someone may have
+	; started talking since. A quiet skip: the next poll tries again.
+	If !abForce && (Self.InPlayersConversation(akFirst) || Self.InPlayersConversation(akSecond))
+		_blockedTalking += 1
+		_lastResult = "chose " + Self.Who(akFirst, akSecond) + ", but one of them is in a conversation with you - waiting"
+		If iLogLevel >= 1 || tally
+			Rapport:Core.Trace("chemistry: pass " + _passes + " - chose " + Self.Who(akFirst, akSecond) + " at " + Self.F2(bestScore) + ", but one of them is in the player's conversation. Not asked." + Self.Tally())
+		EndIf
 		Return
 	EndIf
 
@@ -621,6 +684,10 @@ Function Consider(Bool abForce = False)
 		EndIf
 		If took
 			_acted += 1
+			; Raiders run on their own clock, so they do not move the town's.
+			If !_raiders[best]
+				_lastSceneDay = Utility.GetCurrentGameTime()
+			EndIf
 		EndIf
 	EndIf
 
@@ -685,6 +752,9 @@ Function Snapshot()
 		_couple = new Bool[24]
 		_strays = new Bool[24]
 	EndIf
+	If !_raiders
+		_raiders = new Bool[24]
+	EndIf
 
 	; The list is read across many calls, and Rapport republishes it every 20s. A
 	; publish in the middle stitched one slot from two lists - a pair nobody scored.
@@ -711,6 +781,7 @@ Function Snapshot()
 	While i < count
 		_whose[i] = Self.WhosePlace(i, _first[i], _second[i])
 		Self.ReadPartnership(i)
+		_raiders[i] = Self.BothRaiders(_first[i], _second[i])
 		i += 1
 	EndWhile
 	_held = count
@@ -796,7 +867,7 @@ Function Table(Int aiCount, Int aiChosenFirst, Int aiChosenSecond)
 		Int secondID = _second[i]
 		If firstID != 0 && secondID != 0
 			Float raw = _score[i]
-			Float hist = Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.PersonaBonus(i, firstID, secondID) + _faith[i]
+			Float hist = Self.BondBonus(firstID, secondID) + Self.PlaceBonus(i) + Self.CrowdBonus(i) + Self.PersonaBonus(i, firstID, secondID) + _faith[i]
 
 			; Marked by WHO, not by index. The list can be republished between the
 			; decision and this table, and an index would then point at whoever
@@ -921,7 +992,7 @@ String Function QualityName(Int aiQuality)
 EndFunction
 
 String Function Tally()
-	Return " [this load: " + _passes + " passes, " + _acted + " acted, " + _blockedBusy + " while-busy, " + _blockedResting + " all-resting, " + _blockedBar + " under-bar, " + _blockedEmpty + " nothing-published]"
+	Return " [this load: " + _passes + " passes, " + _acted + " acted, " + _blockedBusy + " while-busy, " + _blockedResting + " all-resting, " + _blockedBar + " under-bar, " + _blockedGap + " town-clock, " + _blockedTalking + " talking-to-player, " + _blockedEmpty + " nothing-published]"
 EndFunction
 
 String Function BestNote(Float afHighest)
@@ -1055,6 +1126,14 @@ Function ReportToNarrator(Int aiIndex, Int aiFirst, Int aiSecond, Actor akFirst,
 	EndIf
 	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "own place", ownPart)
 	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "their faction's place", factionPart)
+	Float crowdPart = Self.CrowdBonus(aiIndex)
+	Float raiderPart = 0.0
+	If _raiders[aiIndex]
+		raiderPart = crowdPart
+		crowdPart = 0.0
+	EndIf
+	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "crowd", crowdPart)
+	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "raiders", raiderPart)
 	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "personas", Self.PersonaBonus(aiIndex, aiFirst, aiSecond))
 	Rapport:Core.NarrateBonus(aiFirst, aiSecond, "spoken for", _faith[aiIndex])
 	; Markers (leading '_'): facts for the Narrator's words, never printed.
@@ -1087,6 +1166,57 @@ Float Function PlaceBonus(Int aiIndex)
 		Return fFactionPlaceBonus
 	EndIf
 	Return 0.0
+EndFunction
+
+; Raiders get their bonus whoever watches; everyone else pays for each onlooker past
+; Rapport's tolerance, except in their own home.
+Float Function CrowdBonus(Int aiIndex)
+	If _raiders[aiIndex]
+		Return fRaiderBonus
+	EndIf
+	If _whose[aiIndex] == 2
+		Return 0.0
+	EndIf
+	Int extra = _observers[aiIndex] - iCrowdTolerance
+	If extra <= 0 || fCrowdPenalty <= 0.0
+		Return 0.0
+	EndIf
+	Float penalty = fCrowdPenalty * extra
+	If penalty > fCrowdPenaltyCap
+		penalty = fCrowdPenaltyCap
+	EndIf
+	Return -penalty
+EndFunction
+
+Bool Function BothRaiders(Int aiFirst, Int aiSecond)
+	If _raiderFaction == None
+		Return False
+	EndIf
+	Actor a = Game.GetForm(aiFirst) as Actor
+	Actor b = Game.GetForm(aiSecond) as Actor
+	Return a != None && b != None && a.IsInFaction(_raiderFaction) && b.IsInFaction(_raiderFaction)
+EndFunction
+
+; Rapport's door rule, asked in vanilla Papyrus: talking with the player, the one the
+; player is talking to, or in the same running Scene as the player or as whoever the
+; player is talking to (Darla and Nick in Skinny's scene).
+Bool Function InPlayersConversation(Actor akWho)
+	If akWho.IsInDialogueWithPlayer()
+		Return True
+	EndIf
+	Actor player = Game.GetPlayer()
+	Actor target = player.GetDialogueTarget()
+	If target == akWho
+		Return True
+	EndIf
+	Scene theirs = akWho.GetCurrentScene()
+	If theirs == None
+		Return False
+	EndIf
+	If theirs == player.GetCurrentScene()
+		Return True
+	EndIf
+	Return target != None && theirs == target.GetCurrentScene()
 EndFunction
 
 ; How long this actor must wait after their refusals, escalating with how many.

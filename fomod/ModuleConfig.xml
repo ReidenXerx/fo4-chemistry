@@ -39,7 +39,7 @@ Install Chemistry after Rapport, with Vortex or MO2. Manual installs are not sup
         <group name="NPCs find each other" type="SelectAll">
           <plugins order="Explicit">
             <plugin name="NPCs find each other">
-              <description>In vanilla Fallout 4, NPCs never get together on their own. About every 30 seconds Chemistry weighs the pairs nearby and, now and then, picks one for a scene; Rapport plays it. Most of the time the answer is no: scenes are rare on purpose, and each person rests a day after one.</description>
+              <description>In vanilla Fallout 4, NPCs never get together on their own. About every 30 seconds Chemistry weighs the pairs nearby and, now and then, picks one for a scene; Rapport plays it. Most of the time the answer is no: scenes are rare on purpose. There is at most one every 6 game hours anywhere (raiders excepted), each person rests a day after one, and nobody who is talking with you is picked.</description>
               <image path="fomod/images/decision.jpg"/>
               <typeDescriptor><type name="Required"/></typeDescriptor>
             </plugin>
@@ -65,7 +65,7 @@ Install Chemistry after Rapport, with Vortex or MO2. Manual installs are not sup
         <group name="Their own place" type="SelectAll">
           <plugins order="Explicit">
             <plugin name="Their own place">
-              <description>A pair indoors in one of their own homes, or in their faction's building, is much likelier to get together, and at home it is unhurried, whoever walks through.</description>
+              <description>A pair indoors in one of their own homes, or in their faction's building, is much likelier to get together, and at home it is unhurried, whoever walks through. Anywhere else a crowd puts people off, except raiders.</description>
               <image path="fomod/images/placement.jpg"/>
               <typeDescriptor><type name="Required"/></typeDescriptor>
             </plugin>

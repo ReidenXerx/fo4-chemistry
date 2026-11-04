@@ -51,10 +51,18 @@ PAGES = [
          "for the Narrator's 'why nothing happened' line.", 0.0, 2.0, 0.05),
         ("General", "iLogLevel", "Log detail", "0 only actions, 1 the full table when it acts, 2 the table "
          "every pass (Rapport.log).", 0, 2, 1),
+        ("General", "fSceneGapHours", "Between scenes (game hours)", "At most one scene this often, anywhere: "
+         "the more people around, the more pairs could qualify, so this keeps it rare. Raiders are exempt. "
+         "0 turns it off.", 0.0, 48.0, 0.5),
         ("section", "Their place"),
         ("Place", "fOwnPlaceBonus", "Their own home", "Bonus when one of them lives here.", 0.0, 2.0, 0.05),
         ("Place", "fFactionPlaceBonus", "Their faction's place", "Bonus in a building their faction owns.",
          0.0, 2.0, 0.05),
+        ("Place", "fCrowdPenalty", "Per onlooker", "Penalty for every onlooker past Rapport's crowd tolerance. "
+         "Not in their own home.", 0.0, 1.0, 0.05),
+        ("Place", "fCrowdPenaltyCap", "Crowd penalty cap", "The crowd never costs more than this.", 0.0, 3.0, 0.05),
+        ("Place", "fRaiderBonus", "Raiders", "Bonus for two raiders. Raiders also skip the time between "
+         "scenes and the crowd penalty.", 0.0, 2.0, 0.05),
     ]),
     ("Relationships", [
         ("section", "Bond"),

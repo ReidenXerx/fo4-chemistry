@@ -102,6 +102,18 @@
           }
         },
         {
+          "type": "slider",
+          "id": "fSceneGapHours:General",
+          "text": "Between scenes (game hours)",
+          "help": "At most one scene this often, anywhere: the more people around, the more pairs could qualify, so this keeps it rare. Raiders are exempt. 0 turns it off.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 48.0,
+            "step": 0.5,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
           "type": "section",
           "text": "Their place"
         },
@@ -122,6 +134,42 @@
           "id": "fFactionPlaceBonus:Place",
           "text": "Their faction's place",
           "help": "Bonus in a building their faction owns.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 2.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "slider",
+          "id": "fCrowdPenalty:Place",
+          "text": "Per onlooker",
+          "help": "Penalty for every onlooker past Rapport's crowd tolerance. Not in their own home.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "slider",
+          "id": "fCrowdPenaltyCap:Place",
+          "text": "Crowd penalty cap",
+          "help": "The crowd never costs more than this.",
+          "valueOptions": {
+            "min": 0.0,
+            "max": 3.0,
+            "step": 0.05,
+            "sourceType": "ModSettingFloat"
+          }
+        },
+        {
+          "type": "slider",
+          "id": "fRaiderBonus:Place",
+          "text": "Raiders",
+          "help": "Bonus for two raiders. Raiders also skip the time between scenes and the crowd penalty.",
           "valueOptions": {
             "min": 0.0,
             "max": 2.0,

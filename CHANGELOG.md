@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.5 (2026-11-04)
+
+- **Rarer.** At most one scene every 6 game hours, anywhere (MCM: Between scenes). Before, the
+  more people were around, the more often some pair said yes.
+- **Raiders are the exception**: they skip that wait and the crowd, and like each other more.
+- **Crowds put people off.** Each onlooker past Rapport's crowd tolerance costs a pair, except in
+  their own home.
+- **Never mid-conversation.** Nobody talking with you, or in the scene you are in, is picked.
+
 ## 0.2.4 (2026-10-08)
 
 - **Servitrons are always willing.** Nothing in Chemistry holds one back: not her own
