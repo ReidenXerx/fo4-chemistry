@@ -4,7 +4,7 @@
   "message": "2.7k lines",
   "color": "informational",
   "_breakdown": {
-    "JavaScript": 973,
+    "JavaScript": 981,
     "Papyrus": 856,
     "Shell": 346,
     "Python": 366,
@@ -12,7 +12,7 @@
   },
   "_files": 31,
   "_top": [
-    "973 JavaScript",
+    "981 JavaScript",
     "856 Papyrus"
   ]
 }
