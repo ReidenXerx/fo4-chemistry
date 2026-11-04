@@ -42,10 +42,11 @@ Every pair of NPCs nearby is weighed on how well they know each other, whose pla
 [list]
 [*][b]Couples, not coincidences.[/b] People who already know each other, such as spouses, family, friends and co-workers, are far likelier to get together. Every scene they share brings them closer.[/*]
 [*][b]Their own place.[/b] A pair indoors in one of their own homes, or in their faction's building, is much likelier. At home it is unhurried, whoever walks through.[/*]
+[*][b]Crowds put people off.[/b] Each onlooker past Rapport's crowd tolerance costs a pair, except in their own home. Raiders don't care who watches.[/*]
 [*][b]Personalities matter.[/b] Two of a kind get on. The romantic one and the crude one clash. The crude one likes an audience, and the shy one hates one.[/*]
 [*][b]Faithfulness.[/b] Married and courting NPCs mostly stay true, each by their own nature. A devoted spouse almost never strays, and a restless one might. If they do, it is remembered as an affair.[/*]
 [*][b]Your lover is spoken for.[/b] If Overture has made someone your lover, they are treated as taken when anybody else comes along.[/*]
-[*][b]Nobody runs wild.[/b] Each person rests a day after a scene. Anyone AAF keeps refusing is left alone for longer each time.[/*]
+[*][b]Nobody runs wild.[/b] Each person rests a day after a scene. Anyone AAF keeps refusing is left alone for longer each time. There is also at most one scene every 6 game hours anywhere (raiders excepted), and nobody who is talking with you is ever picked.[/*]
 [/list][center][img]https://cdn.jsdelivr.net/gh/ReidenXerx/fo4-chemistry@63e6741af3a8ff2f200de390be9a2fe3df6145c5/docs/img/score.jpg[/img][/center]
 
 [center][img]https://cdn.jsdelivr.net/gh/ReidenXerx/fo4-chemistry@63e6741af3a8ff2f200de390be9a2fe3df6145c5/docs/img/bond.jpg[/img][/center]
@@ -96,7 +97,7 @@ Known conflicts, from real reports and the code. Found another one? Tell us in t
 [spoiler]They can. Whether you are nearby is deliberately not a factor, so the world does not stop because you walked in. The crowd around them is a factor, and you do not count as the crowd.[/spoiler]
 
 [b]Too many scenes, or too few?[/b]
-[spoiler]Raise or lower [i]Score needed[/i] (default 0.90) and [i]Rest per person[/i] (default 24 game hours) in MCM. There is no global rate limit: a busy settlement has more scenes simply because it has more pairs.[/spoiler]
+[spoiler]Raise or lower [i]Score needed[/i] (default 0.90), [i]Rest per person[/i] (default 24 game hours) and [i]Between scenes[/i] (default 6 game hours, at most one scene that often anywhere; 0 turns it off) in MCM. Raiders skip the wait.[/spoiler]
 
 [b]Can I make it decide right now?[/b]
 [spoiler]Yes, from MCM's Debug page or two hotkeys. REAL runs an ordinary decision with every rule. FORCED takes the best pair regardless of the bar and the rest time. Both still wait for a running scene.[/spoiler]
