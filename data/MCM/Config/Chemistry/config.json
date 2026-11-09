@@ -180,6 +180,28 @@
       ]
     },
     {
+      "pageDisplayName": "Visitors",
+      "content": [
+        {
+          "type": "text",
+          "text": "For Vulgar Settlers & Visitors. Chemistry pairs its visitors and settlers through Rapport, so orientation, personas, consent and private spots apply. VSV's own menu still chooses who and when (settlers, F/F, M/M, night, indoors, cooldown)."
+        },
+        {
+          "type": "section",
+          "text": "Vulgar Settlers & Visitors"
+        },
+        {
+          "type": "switcher",
+          "id": "bVisitors:Visitors",
+          "text": "Visitor scenes through Rapport",
+          "help": "On: VSV's own pairing is switched off (its 'Enable Mod' shows off) and Chemistry does the pairing. Off: VSV pairs its visitors itself again. Does nothing without VSV. Removing Chemistry? Turn this off first, or VSV stays switched off.",
+          "valueOptions": {
+            "sourceType": "ModSettingBool"
+          }
+        }
+      ]
+    },
+    {
       "pageDisplayName": "Relationships",
       "content": [
         {

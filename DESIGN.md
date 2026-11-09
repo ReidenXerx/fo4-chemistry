@@ -239,3 +239,25 @@ because the store only learns two people are married when their first scene star
 pair of a pass falls within `fNearMissMargin` of the bar, Chemistry says why it didn't happen, as a
 clause with no names; Rapport rate-limits those lines.
 
+
+## C-11 - Vulgar Settlers & Visitors goes through Rapport (owner, 2026-11-09)
+
+Owner's GO (Dudu, help-chat, via Rapport). VSV started its own AAF scenes between Settlement
+Visitors' visitors and settlers, with none of Rapport's orientation, personas, consent or private
+spots. `Chemistry:Visitors`, on its own quest (0x801), switches VSV's pairing off at runtime and
+does the same job through `RequestScene`.
+
+- **No VSV files, no VSV record overrides.** Its permissions forbid using or modifying its assets.
+  It only reads VSV's option globals at runtime and writes one: `Vulgar_Enabled` (0x805), which
+  VSV's own script checks before it does anything. The player's value is remembered and given back
+  when "Visitor scenes through Rapport" is turned off. If VSV was already off, no visitor scenes.
+- **VSV's rules were read from its compiled script, not guessed** (v2.0.1): owned workshop the
+  player is in, the actors home-linked to its sandbox marker, a partner within 500 units, sexes
+  differ or its M/M / F/F switch allows, settlers/visitors/sitting/night/indoor switches, its
+  cooldown after a scene and 90 s after finding nobody.
+- **Dropped:** threesomes (pairs only), creatures (Rapport has no creature scenes), the belly
+  morphs, and the scene-shape options (duration, skip walk, furniture, male receiver), which
+  Rapport's scenario decides. "Indoors/Sheltered Only" means an interior cell: VSV's sheltered
+  test needs Garden of Eden and is skipped without it.
+- Indoors plays `athome`, outside `tender` (Rapport walks the pair out of sight when a crowd can
+  see them). Visitor scenes do not move Chemistry's town clock: VSV's own cooldown governs them.

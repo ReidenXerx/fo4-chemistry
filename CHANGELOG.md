@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.6 (2026-11-09)
+
+- **Vulgar Settlers & Visitors, through Rapport.** With VSV installed, Chemistry pairs its visitors and settlers instead, so orientation, personalities, consent and private spots apply. VSV's menu still decides who and when. MCM: Visitors.
+
 ## 0.2.5 (2026-11-04)
 
 - **Rarer.** At most one scene every 6 game hours, anywhere (MCM: Between scenes). Before, the

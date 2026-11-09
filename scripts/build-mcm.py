@@ -21,13 +21,21 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "papyrus" / "Chemistry" / "Autonomy.psc"
 OUT = ROOT / "data" / "MCM" / "Config" / "Chemistry"
 
+# Visitors.psc (0.2.6, the Vulgar Settlers & Visitors replacement) keeps its own
+# Defaults() the same way; both are read, and a name in both is an error.
+VISITORS = ROOT / "papyrus" / "Chemistry" / "Visitors.psc"
+
 source = SCRIPT.read_text(encoding="utf-8")
-body = re.search(r"^Function Defaults\(\)\n(.*?)^EndFunction", source, re.M | re.S)
-if not body:
-    raise SystemExit("no Defaults() in Autonomy.psc - nothing to read the defaults from")
 defaults = {}
-for name, value in re.findall(r"^\s*(\w+) = (\S+)\s*$", body.group(1), re.M):
-    defaults[name] = value
+for script in (SCRIPT, VISITORS):
+    text = script.read_text(encoding="utf-8")
+    body = re.search(r"^Function Defaults\(\)\n(.*?)^EndFunction", text, re.M | re.S)
+    if not body:
+        raise SystemExit(f"no Defaults() in {script.name} - nothing to read the defaults from")
+    for name, value in re.findall(r"^\s*(\w+) = (\S+)\s*$", body.group(1), re.M):
+        if name in defaults:
+            raise SystemExit(f"{name} has a default in two scripts")
+        defaults[name] = value
 
 # (section, key, label, help, min, max, step) - step None = switch
 PAGES = [
@@ -63,6 +71,16 @@ PAGES = [
         ("Place", "fCrowdPenaltyCap", "Crowd penalty cap", "The crowd never costs more than this.", 0.0, 3.0, 0.05),
         ("Place", "fRaiderBonus", "Raiders", "Bonus for two raiders. Raiders also skip the time between "
          "scenes and the crowd penalty.", 0.0, 2.0, 0.05),
+    ]),
+    ("Visitors", [
+        ("text", "For Vulgar Settlers & Visitors. Chemistry pairs its visitors and settlers through Rapport, so "
+                 "orientation, personas, consent and private spots apply. VSV's own menu still chooses who and "
+                 "when (settlers, F/F, M/M, night, indoors, cooldown)."),
+        ("section", "Vulgar Settlers & Visitors"),
+        ("Visitors", "bVisitors", "Visitor scenes through Rapport", "On: VSV's own pairing is switched off (its "
+         "'Enable Mod' shows off) and Chemistry does the pairing. Off: VSV pairs its visitors itself again. "
+         "Does nothing without VSV. Removing Chemistry? Turn this off first, or VSV stays switched off.",
+         None, None, None),
     ]),
     ("Relationships", [
         ("section", "Bond"),

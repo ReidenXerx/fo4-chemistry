@@ -111,5 +111,22 @@ Install Chemistry after Rapport, with Vortex or MO2. Manual installs are not sup
         </group>
       </optionalFileGroups>
     </installStep>
+    <installStep name="Vulgar Settlers &amp; Visitors">
+      <visible>
+        <dependencies operator="And">
+          <fileDependency file="VulgarVisitors2.esm" state="Active"/>
+        </dependencies>
+      </visible>
+      <optionalFileGroups order="Explicit">
+        <group name="Vulgar Settlers &amp; Visitors" type="SelectAll">
+          <plugins order="Explicit">
+            <plugin name="Visitor scenes through Rapport">
+              <description>Vulgar Settlers &amp; Visitors found. Chemistry now pairs its visitors and settlers through Rapport, so orientation, personalities, consent and private spots apply. VSV's own menu still decides who and when. Turn it off on Chemistry's Visitors page to give VSV its own pairing back.</description>
+              <typeDescriptor><type name="Required"/></typeDescriptor>
+            </plugin>
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
   </installSteps>
 </config>

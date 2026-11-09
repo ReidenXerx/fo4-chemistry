@@ -113,6 +113,10 @@ info(`Chemistry.esp: ${esp.length} bytes`);
 const pex = zipEntry(bytes, "Scripts/Chemistry/Autonomy.pex");
 if (!pex) fail("Scripts/Chemistry/Autonomy.pex is not in the archive — run build-papyrus first");
 info(`Autonomy.pex: ${pex.length} bytes`);
+
+const visitors = zipEntry(bytes, "Scripts/Chemistry/Visitors.pex");
+if (!visitors) fail("Scripts/Chemistry/Visitors.pex is not in the archive — Chemistry.esp's second quest would have no script");
+info(`Visitors.pex: ${visitors.length} bytes`);
 info(`${zipName}: ${bytes.length} bytes`);
 
 // ── what Nexus has now ───────────────────────────────────────────────────

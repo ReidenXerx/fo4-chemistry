@@ -1,4 +1,4 @@
-"""Generate Chemistry's plugin: one quest with one script attached, nothing else.
+"""Generate Chemistry's plugin: two quests, one script each, nothing else.
 
 Copied from Rapport's tools/make_esp.py so this repository can rebuild its own esp
 without Rapport's source present. The shape is not from documentation -- it was read
@@ -24,6 +24,12 @@ MASTER = 'Fallout4.esm'
 
 # The first object id a new plugin may use; below 0x800 is reserved.
 QUEST_FORMID = 0x01000800
+# The second quest, since 0.2.6: Chemistry:Visitors, the Vulgar Settlers & Visitors
+# replacement (Dudu's GO, 2026-11-09). Its own quest and script, so its timer and its
+# soft dependency stay out of Autonomy (one timer per script, see Autonomy.psc).
+VISITORS_FORMID = 0x01000801
+VISITORS_SCRIPT = 'Chemistry:Visitors'
+VISITORS_EDID = 'ChemistryVisitorsQuest'
 TES4_LIGHT = 0x200   # the TES4 record flag that makes a plugin light (ESL)
 
 # The only thing Rapport ever has to ask the player. AAF's main quest being
@@ -67,8 +73,7 @@ def group(label, records_blob):
             + records_blob)
 
 
-def build(script_name, quest_edid):
-    # ---- the quest ----------------------------------------------------------
+def quest_record(form_id, script_name, quest_edid):
     vmad = struct.pack('<hhH', 6, 2, 1)        # version, object format, script count
     vmad += wstring(script_name)
     vmad += struct.pack('<B', 0)               # status: local
@@ -83,27 +88,33 @@ def build(script_name, quest_edid):
     quest += field('VMAD', vmad)
     quest += field('DNAM', dnam)
     quest += field('NEXT', b'')                # alias section marker, empty
+    return record('QUST', form_id, quest)
 
-    quest_record = record('QUST', QUEST_FORMID, quest)
-    quest_group = group('QUST', quest_record)
 
-    # One quest and nothing else. Chemistry asks the player nothing: every choice
+def build(script_name, quest_edid):
+    # ---- the quests ---------------------------------------------------------
+    quests = [(QUEST_FORMID, script_name, quest_edid),
+              (VISITORS_FORMID, VISITORS_SCRIPT, VISITORS_EDID)]
+    quest_group = group('QUST', b''.join(quest_record(*q) for q in quests))
+
+    # Quests and nothing else. Chemistry asks the player nothing: every choice
     # it makes is about two NPCs who are not the player, so there is no message
     # record here and no reason for one.
-    next_object = QUEST_FORMID + 1
+    next_object = max(q[0] for q in quests) + 1
 
     # ---- the header ---------------------------------------------------------
-    hedr = struct.pack('<fiI', 1.0, 1, next_object)
+    hedr = struct.pack('<fiI', 1.0, len(quests), next_object)
     header_fields = field('HEDR', hedr)
     header_fields += field('CNAM', zstring(AUTHOR))
     header_fields += field('MAST', zstring(MASTER))
     header_fields += field('DATA', struct.pack('<Q', 0))
 
-    # LIGHT (0x200, ESL): the one quest sits at 0x800, the range a light plugin holds,
+    # LIGHT (0x200, ESL): the quests sit at 0x800+, the range a light plugin holds,
     # so it loads in the FE slot and takes no load-order index (asked for on Discord,
     # 2026-09-26). Papyrus's GetFormFromFile finds a light plugin's forms the same way.
-    if not 0x800 <= (QUEST_FORMID & 0x00FFFFFF) <= 0xFFF:
-        raise SystemExit(f'{QUEST_FORMID:08X} is outside 0x800-0xFFF, the only ids a light plugin holds.')
+    for form_id, _, _ in quests:
+        if not 0x800 <= (form_id & 0x00FFFFFF) <= 0xFFF:
+            raise SystemExit(f'{form_id:08X} is outside 0x800-0xFFF, the only ids a light plugin holds.')
     header = record('TES4', 0, header_fields, flags=TES4_LIGHT)
     return header + quest_group
 
@@ -121,6 +132,7 @@ def main():
     print('wrote {} ({} bytes)'.format(sys.argv[1], len(blob)))
     print('  quest  {} formID {:08X}'.format(quest_edid, QUEST_FORMID))
     print('  script {}'.format(script_name))
+    print('  quest  {} formID {:08X}, script {}'.format(VISITORS_EDID, VISITORS_FORMID, VISITORS_SCRIPT))
     print('  master {}'.format(MASTER))
     return 0
 
