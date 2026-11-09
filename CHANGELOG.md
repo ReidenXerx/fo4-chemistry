@@ -3,6 +3,7 @@
 ## 0.2.6 (2026-11-09)
 
 - **Vulgar Settlers & Visitors, through Rapport.** With VSV installed, Chemistry pairs its visitors and settlers instead, so orientation, personalities, consent and private spots apply. VSV's menu still decides who and when. MCM: Visitors.
+- Turn "Visitor scenes through Rapport" off before removing Chemistry, or VSV stays switched off.
 
 ## 0.2.5 (2026-11-04)
 
