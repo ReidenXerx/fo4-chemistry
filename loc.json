@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
   "label": "code",
-  "message": "2.7k lines",
+  "message": "3.0k lines",
   "color": "informational",
   "_breakdown": {
-    "JavaScript": 981,
-    "Papyrus": 856,
+    "JavaScript": 984,
+    "Papyrus": 1181,
     "Shell": 346,
-    "Python": 366,
+    "Python": 389,
     "PowerShell": 127
   },
-  "_files": 31,
+  "_files": 32,
   "_top": [
-    "981 JavaScript",
-    "856 Papyrus"
+    "1.2k Papyrus",
+    "984 JavaScript"
   ]
 }
