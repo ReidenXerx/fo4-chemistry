@@ -88,6 +88,8 @@ Float _vsvWas = -1.0
 Float _wait = 0.0
 ; Rapport took our pair; the cooldown starts when Rapport is free again.
 Bool _sceneOurs = False
+; The last "nothing asked" reason written to the log (Note).
+String _lastNote = ""
 
 ; ---- lifecycle ----------------------------------------------------------------
 
@@ -248,19 +250,23 @@ Bool Function TryPair()
 	Actor player = Game.GetPlayer()
 	Location here = player.GetCurrentLocation()
 	If here == None || _settlement == None || !here.HasKeyword(_settlement)
+		Self.Note("not at a settlement")
 		Return False
 	EndIf
 	If Self.On(_nightOnly) && _gameHour != None
 		Float hour = _gameHour.GetValue()
 		If hour > 8.0 && hour < 20.0
+			Self.Note("VSV's Nighttime Only, and it is day")
 			Return False
 		EndIf
 	EndIf
 	If Rapport:Core.Busy() || Rapport:Core.PlayerHoldsSlot()
+		Self.Note("Rapport is busy with a scene, or holds the slot for the player")
 		Return False
 	EndIf
 	ObjectReference ws = Self.WorkshopHere(here)
 	If ws == None
+		Self.Note("this settlement is not the player's (or its workshop did not resolve)")
 		Return False
 	EndIf
 	ObjectReference marker = ws.GetLinkedRef(_linkSandbox)
@@ -268,10 +274,16 @@ Bool Function TryPair()
 		marker = ws.GetLinkedRef(_linkCenter)
 	EndIf
 	If marker == None
+		Self.Note("the workshop has no sandbox or centre marker")
 		Return False
 	EndIf
 	Actor[] people = marker.GetActorsLinkedToMe(_linkHome, None)
 	If people == None || people.Length < 2
+		Int few = 0
+		If people != None
+			few = people.Length
+		EndIf
+		Self.Note(few + " home-linked to the workshop marker (visitors arrive when you enter the settlement); 2 needed")
 		Return False
 	EndIf
 	Int n = people.Length
@@ -307,6 +319,7 @@ Bool Function TryPair()
 		i += 1
 	EndWhile
 	If eligible < 2
+		Self.Note(n + " home-linked, " + eligible + " free and allowed by VSV's switches; 2 needed")
 		Return False
 	EndIf
 
@@ -332,7 +345,24 @@ Bool Function TryPair()
 		EndIf
 		i += 1
 	EndWhile
+	If asks == 0
+		Self.Note(eligible + " free, but no two within " + (kPartnerReach as Int) + " units with sexes VSV's F/F and M/M switches allow")
+	Else
+		; Each declined pair was logged by Ask; a new streak starts after this.
+		_lastNote = ""
+	EndIf
 	Return False
+EndFunction
+
+; Why nothing was asked, once per change: a tick is 30 seconds, and the same reason
+; every tick would bury everything else in Rapport.log. Any decision must still be
+; reconstructable from the log (Autonomy's rule), so a new reason is always written.
+Function Note(String asWhy)
+	If asWhy == _lastNote
+		Return
+	EndIf
+	_lastNote = asWhy
+	Rapport:Core.Trace("chemistry visitors: nothing asked - " + asWhy)
 EndFunction
 
 ; The workshop of this location, if the player owns it. WorkshopParentScript and
