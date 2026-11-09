@@ -329,9 +329,11 @@ Bool Function TryPair()
 		If ok[i]
 			Actor a = people[i]
 			Int sexA = a.GetLeveledActorBase().GetSex()
-			Int j = 0
+			; Each pair once: j after i. Rapport decides the roles, so B + A asks the same
+			; question as A + B (Fo4-mcp, 11-09: one pair asked twice, 0.3 s apart).
+			Int j = i + 1
 			While j < n && asks < kMaxAsks
-				If j != i && ok[j]
+				If ok[j]
 					Actor b = people[j]
 					If a.GetDistance(b) < kPartnerReach && Self.SexesAllowed(sexA, b.GetLeveledActorBase().GetSex(), mm, ff)
 						asks += 1
